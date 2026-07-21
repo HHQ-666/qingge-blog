@@ -1,3 +1,10 @@
+## 当前线上地址
+
+- 生产站：https://qingge-cabana.vercel.app/
+- 仓库：https://github.com/HHQ-666/qingge-blog
+
+---
+
 # 清哥的小屋 · 部署与评论配置
 
 这份文档只写你需要动手的几步。代码侧（`site` 配置、GitHub Actions 工作流、Giscus 组件）已经接好。
