@@ -1,0 +1,64 @@
+---
+import { Icon } from "astro-icon/components";
+import { funConfig } from "../../config";
+
+const enabled = funConfig.hitokoto;
+---
+
+{
+	enabled && (
+		<div class="card-base p-4 onload-animation hitokoto-card" style="animation-delay: 180ms">
+			<div class="flex items-center gap-2 mb-2.5 text-50">
+				<Icon name="material-symbols:format-quote-rounded" class="text-[1.15rem] text-[var(--primary)]" />
+				<span class="text-sm font-semibold tracking-wide">今日一言</span>
+			</div>
+			<blockquote id="hitokoto-text" class="text-75 text-sm leading-relaxed min-h-[2.75rem]">
+				加载中…
+			</blockquote>
+			<div class="mt-2.5 flex items-center justify-between gap-2">
+				<p id="hitokoto-from" class="text-50 text-xs truncate">—</p>
+				<button
+					type="button"
+					id="hitokoto-refresh"
+					class="btn-plain rounded-lg h-8 w-8 shrink-0 active:scale-90"
+					title="换一句"
+					aria-label="换一句"
+				>
+					<Icon name="material-symbols:refresh-rounded" class="text-[1.1rem]" />
+				</button>
+			</div>
+		</div>
+	)
+}
+
+{
+	enabled && (
+		<script>
+			async function loadHitokoto() {
+				const textEl = document.getElementById("hitokoto-text");
+				const fromEl = document.getElementById("hitokoto-from");
+				if (!textEl || !fromEl) return;
+				try {
+					const res = await fetch("https://v1.hitokoto.cn/?c=i&c=k&c=d&encode=json");
+					if (!res.ok) throw new Error("bad status");
+					const data = await res.json();
+					textEl.textContent = data.hitokoto || "愿你眼里有光，心中有爱。";
+					const from = data.from_who || data.from || "佚名";
+					fromEl.textContent = `— ${from}`;
+				} catch {
+					textEl.textContent = "愿你眼里有光，心中有爱。读过的书，走过的路，都算数。";
+					fromEl.textContent = "— 清哥的小屋";
+				}
+			}
+			loadHitokoto();
+			const btn = document.getElementById("hitokoto-refresh");
+			if (btn) btn.addEventListener("click", loadHitokoto);
+			// Swup 页面切换后重新绑定
+			document.addEventListener("swup:page:view", () => {
+				loadHitokoto();
+				const b = document.getElementById("hitokoto-refresh");
+				if (b) b.addEventListener("click", loadHitokoto);
+			});
+		</script>
+	)
+}

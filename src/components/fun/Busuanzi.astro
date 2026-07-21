@@ -1,0 +1,14 @@
+---
+import { funConfig } from "../../config";
+const enabled = funConfig.busuanzi;
+---
+
+{
+	enabled && (
+		<script
+			is:inline
+			async
+			src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
+		/>
+	)
+}

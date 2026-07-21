@@ -1,0 +1,107 @@
+---
+import { Icon } from "astro-icon/components";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import { giscusConfig } from "../config";
+
+const fullyConfigured =
+	giscusConfig.enable &&
+	Boolean(giscusConfig.repo) &&
+	Boolean(giscusConfig.repoId) &&
+	Boolean(giscusConfig.categoryId);
+
+const showPlaceholder = giscusConfig.enable && !fullyConfigured;
+---
+
+{
+	fullyConfigured && (
+		<section
+			class="card-base rounded-[var(--radius-large)] overflow-hidden p-4 md:p-6 mb-4 onload-animation comment-section"
+			aria-label={i18n(I18nKey.comments)}
+		>
+			<h2 class="text-lg font-bold text-90 mb-4 flex items-center gap-2">
+				<span class="inline-block w-1 h-5 rounded-full bg-[var(--primary)]" />
+				{i18n(I18nKey.comments)}
+			</h2>
+			<div class="giscus-host">
+				<script
+					is:inline
+					src="https://giscus.app/client.js"
+					data-repo={giscusConfig.repo}
+					data-repo-id={giscusConfig.repoId}
+					data-category={giscusConfig.category}
+					data-category-id={giscusConfig.categoryId}
+					data-mapping={giscusConfig.mapping}
+					data-strict={giscusConfig.strict}
+					data-reactions-enabled={giscusConfig.reactionsEnabled}
+					data-emit-metadata={giscusConfig.emitMetadata}
+					data-input-position={giscusConfig.inputPosition}
+					data-theme={giscusConfig.theme}
+					data-lang={giscusConfig.lang}
+					data-loading={giscusConfig.loading}
+					crossorigin="anonymous"
+					async
+				/>
+			</div>
+		</section>
+	)
+}
+
+{
+	showPlaceholder && (
+		<section
+			class="card-base rounded-[var(--radius-large)] overflow-hidden p-5 md:p-6 mb-4 onload-animation comment-placeholder"
+			aria-label={i18n(I18nKey.comments)}
+		>
+			<div class="flex items-start gap-3">
+				<div class="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--btn-regular-bg)] text-[var(--primary)]">
+					<Icon name="material-symbols:chat-bubble-outline-rounded" class="text-[1.35rem]" />
+				</div>
+				<div class="min-w-0 flex-1">
+					<h2 class="text-lg font-bold text-90 mb-1.5 flex items-center gap-2">
+						{i18n(I18nKey.comments)}
+						<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--btn-regular-bg)] text-50">
+							待开启
+						</span>
+					</h2>
+					<p class="text-75 text-sm leading-relaxed mb-3">
+						评论基于 GitHub Discussions（Giscus）。仓库推送并开启 Discussions 后，在
+						<a
+							class="link text-[var(--primary)] font-medium"
+							href="https://giscus.app/zh-CN"
+							target="_blank"
+							rel="noopener"
+						>
+							giscus.app
+						</a>
+						获取 <code class="text-xs">repoId</code> / <code class="text-xs">categoryId</code>
+						，填入 <code class="text-xs">src/config.ts</code> 的 <code class="text-xs">giscusConfig</code> 即可。
+					</p>
+					<ul class="text-50 text-xs leading-relaxed space-y-1 list-disc pl-4">
+						<li>
+							目标仓库：
+							<code class="text-[var(--primary)]">{giscusConfig.repo || "未设置"}</code>
+						</li>
+						<li>详细步骤见项目 docs/DEPLOY.md 第二节</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+	)
+}
+
+<style>
+	.comment-section :global(.giscus),
+	.comment-section :global(.giscus-frame) {
+		width: 100%;
+	}
+	.comment-placeholder code {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+		background: oklch(0.95 0.02 var(--hue) / 0.6);
+		padding: 0.1em 0.35em;
+		border-radius: 0.3em;
+	}
+	:global(.dark) .comment-placeholder code {
+		background: oklch(0.32 0.03 var(--hue) / 0.55);
+	}
+</style>

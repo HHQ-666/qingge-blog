@@ -1,0 +1,228 @@
+---
+import { Image } from "astro:assets";
+import { funConfig, siteConfig } from "../config";
+import splashImg from "../assets/images/splash-ocean-sunset.jpg";
+
+const { splash } = funConfig;
+const enabled = splash.enable;
+---
+
+{
+	enabled && (
+		<div
+			id="site-splash"
+			class="site-splash"
+			role="dialog"
+			aria-label="开场画面"
+			aria-modal="true"
+			data-duration={splash.durationMs}
+			data-fade={splash.fadeMs}
+			data-once={splash.oncePerSession ? "1" : "0"}
+		>
+			<div class="site-splash__bg">
+				<Image
+					src={splashImg}
+					alt="开场风景"
+					class="site-splash__img"
+					widths={[960, 1440, 1920]}
+					sizes="100vw"
+					loading="eager"
+					fetchpriority="high"
+				/>
+				<div class="site-splash__veil" />
+			</div>
+			<div class="site-splash__content">
+				<p class="site-splash__eyebrow">Welcome</p>
+				<h1 class="site-splash__title">{splash.title || siteConfig.title}</h1>
+				<p class="site-splash__sub">{splash.subtitle}</p>
+				<button type="button" class="site-splash__skip" id="site-splash-skip">
+					进入小屋
+				</button>
+			</div>
+		</div>
+	)
+}
+
+{
+	enabled && (
+		<script is:inline>
+			(function () {
+				const el = document.getElementById("site-splash");
+				if (!el) return;
+				const once = el.getAttribute("data-once") === "1";
+				const KEY = "qingge-splash-seen";
+				// 仅在首页路径触发；非首页或会话已看过则直接移除
+				const path = location.pathname.replace(/\/+$/, "") || "/";
+				const isHome = path === "" || path === "/" || /\/page\/1$/.test(path);
+				if (!isHome || (once && sessionStorage.getItem(KEY))) {
+					el.remove();
+					return;
+				}
+				document.documentElement.classList.add("splash-active");
+				const duration = Number(el.getAttribute("data-duration") || 2800);
+				const fade = Number(el.getAttribute("data-fade") || 900);
+				let closed = false;
+				function closeSplash() {
+					if (closed) return;
+					closed = true;
+					el.classList.add("is-leaving");
+					if (once) {
+						try {
+							sessionStorage.setItem(KEY, "1");
+						} catch (_) {}
+					}
+					setTimeout(function () {
+						el.remove();
+						document.documentElement.classList.remove("splash-active");
+					}, fade);
+				}
+				const skip = document.getElementById("site-splash-skip");
+				if (skip) skip.addEventListener("click", closeSplash);
+				el.addEventListener("click", function (e) {
+					if (e.target === el || (e.target && e.target.classList && e.target.classList.contains("site-splash__bg"))) {
+						closeSplash();
+					}
+				});
+				setTimeout(closeSplash, duration);
+			})();
+		</script>
+	)
+}
+
+<style is:global>
+	html.splash-active,
+	html.splash-active body {
+		overflow: hidden !important;
+	}
+</style>
+
+<style>
+	.site-splash {
+		position: fixed;
+		inset: 0;
+		z-index: 9999;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #fff;
+		animation: splash-in 700ms ease both;
+	}
+	.site-splash.is-leaving {
+		animation: splash-out var(--splash-fade, 900ms) ease forwards;
+		pointer-events: none;
+	}
+	.site-splash__bg {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+	}
+	.site-splash__img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transform: scale(1.06);
+		animation: splash-kenburns 4s ease-out both;
+	}
+	.site-splash__veil {
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(ellipse at 50% 40%, transparent 0%, rgba(20, 12, 6, 0.35) 55%, rgba(10, 6, 3, 0.72) 100%),
+			linear-gradient(to top, rgba(12, 8, 4, 0.55), transparent 45%);
+	}
+	.site-splash__content {
+		position: relative;
+		z-index: 1;
+		text-align: center;
+		padding: 1.5rem;
+		max-width: 36rem;
+		animation: splash-rise 900ms 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	}
+	.site-splash__eyebrow {
+		letter-spacing: 0.35em;
+		text-transform: uppercase;
+		font-size: 0.75rem;
+		opacity: 0.85;
+		margin-bottom: 0.75rem;
+		font-weight: 500;
+	}
+	.site-splash__title {
+		font-size: clamp(2rem, 5vw, 3rem);
+		font-weight: 700;
+		line-height: 1.2;
+		text-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
+		margin: 0 0 0.75rem;
+	}
+	.site-splash__sub {
+		font-size: 1rem;
+		opacity: 0.9;
+		line-height: 1.7;
+		margin: 0 0 1.5rem;
+		text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+	}
+	.site-splash__skip {
+		appearance: none;
+		border: 1px solid rgba(255, 255, 255, 0.45);
+		background: rgba(255, 255, 255, 0.12);
+		backdrop-filter: blur(8px);
+		color: #fff;
+		border-radius: 999px;
+		padding: 0.65rem 1.35rem;
+		font-size: 0.9rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition:
+			background 200ms ease,
+			transform 200ms ease,
+			border-color 200ms ease;
+	}
+	.site-splash__skip:hover {
+		background: rgba(255, 255, 255, 0.22);
+		border-color: rgba(255, 255, 255, 0.7);
+		transform: translateY(-1px);
+	}
+	.site-splash__skip:active {
+		transform: scale(0.97);
+	}
+
+	@keyframes splash-in {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+	@keyframes splash-out {
+		to {
+			opacity: 0;
+			transform: scale(1.03);
+		}
+	}
+	@keyframes splash-kenburns {
+		from {
+			transform: scale(1.12);
+		}
+		to {
+			transform: scale(1.04);
+		}
+	}
+	@keyframes splash-rise {
+		from {
+			opacity: 0;
+			transform: translateY(18px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.site-splash,
+		.site-splash__img,
+		.site-splash__content {
+			animation: none !important;
+		}
+	}
+</style>

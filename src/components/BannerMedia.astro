@@ -1,0 +1,100 @@
+---
+import ImageWrapper from "./misc/ImageWrapper.astro";
+import { siteConfig } from "../config";
+
+const banner = siteConfig.banner;
+const videoEnabled = Boolean(banner.video?.enable && banner.video?.src);
+const posterSrc = banner.video?.poster || banner.src;
+const position = banner.position || "center";
+---
+
+{
+	videoEnabled ? (
+		<div
+			id="banner"
+			class="banner-media object-cover h-full transition duration-700 opacity-0 scale-105 relative overflow-hidden"
+		>
+			<video
+				id="banner-video"
+				class="banner-media__video absolute inset-0 w-full h-full object-cover"
+				style={`object-position: ${position}`}
+				autoplay
+				muted
+				loop
+				playsinline
+				preload="metadata"
+				aria-hidden="true"
+			>
+				<source src={banner.video!.src} type="video/mp4" />
+			</video>
+			{/* 静态 poster 作首帧与降级 */}
+			<div class="banner-media__poster absolute inset-0">
+				<ImageWrapper
+					src={posterSrc}
+					alt="Banner poster"
+					position={position}
+					class="w-full h-full"
+				/>
+			</div>
+		</div>
+	) : (
+		<ImageWrapper
+			id="banner"
+			alt="Banner image of the blog"
+			class:list={["object-cover h-full transition duration-700 opacity-0 scale-105"]}
+			src={banner.src}
+			position={position}
+		/>
+	)
+}
+
+{
+	videoEnabled && (
+		<script is:inline>
+			(function () {
+				const root = document.getElementById("banner");
+				const video = document.getElementById("banner-video");
+				const poster = root && root.querySelector(".banner-media__poster");
+				if (!video || !(video instanceof HTMLVideoElement)) return;
+
+				function hidePoster() {
+					if (poster) poster.classList.add("is-hidden");
+				}
+				function showPoster() {
+					if (poster) poster.classList.remove("is-hidden");
+				}
+
+				video.addEventListener("loadeddata", hidePoster);
+				video.addEventListener("playing", hidePoster);
+				video.addEventListener("error", showPoster);
+
+				// 部分浏览器需要手动 play（尤其是页面切换后）
+				const tryPlay = function () {
+					const p = video.play();
+					if (p && typeof p.catch === "function") p.catch(function () {});
+				};
+				tryPlay();
+				document.addEventListener("swup:page:view", tryPlay);
+			})();
+		</script>
+	)
+}
+
+<style>
+	.banner-media__poster {
+		transition: opacity 500ms ease;
+		pointer-events: none;
+	}
+	.banner-media__poster.is-hidden {
+		opacity: 0;
+	}
+	.banner-media__video {
+		z-index: 1;
+	}
+	.banner-media__poster {
+		z-index: 2;
+	}
+	.banner-media__poster.is-hidden {
+		z-index: 0;
+	}
+</style>

@@ -1,0 +1,28 @@
+---
+import type { GetStaticPaths } from "astro";
+import Pagination from "../components/control/Pagination.astro";
+import HomeHero from "../components/HomeHero.astro";
+import PostPage from "../components/PostPage.astro";
+import { PAGE_SIZE } from "../constants/constants";
+import MainGridLayout from "../layouts/MainGridLayout.astro";
+import { getSortedPosts } from "../utils/content-utils";
+
+export const getStaticPaths = (async ({ paginate }) => {
+	const allBlogPosts = await getSortedPosts();
+	return paginate(allBlogPosts, { pageSize: PAGE_SIZE });
+}) satisfies GetStaticPaths;
+// https://github.com/withastro/astro/issues/6507#issuecomment-1489916992
+
+const { page } = Astro.props;
+
+const len = page.data.length;
+const isHomeFirstPage = page.currentPage === 1;
+// HomeHero + list stagger: push list delay a bit on first page
+const listDelayOffset = isHomeFirstPage ? 80 : 0;
+---
+
+<MainGridLayout>
+    {isHomeFirstPage && <HomeHero />}
+    <PostPage page={page} delayOffset={listDelayOffset}></PostPage>
+    <Pagination class="mx-auto onload-animation" page={page} style={`animation-delay: calc(var(--content-delay) + ${listDelayOffset + (len)*50}ms)`}></Pagination>
+</MainGridLayout>

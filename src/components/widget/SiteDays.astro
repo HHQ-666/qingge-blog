@@ -1,0 +1,46 @@
+---
+import { Icon } from "astro-icon/components";
+import { funConfig } from "../../config";
+
+const conf = funConfig.siteDays;
+const enabled = conf.enable;
+let days = 0;
+if (enabled && conf.startDate) {
+	const start = new Date(`${conf.startDate}T00:00:00`);
+	const now = new Date();
+	days = Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1);
+}
+---
+
+{
+	enabled && (
+		<div class="card-base p-4 onload-animation" style="animation-delay: 220ms">
+			<div class="flex items-center gap-2 mb-2 text-50">
+				<Icon name="material-symbols:nest-clock-farsight-analog-outline-rounded" class="text-[1.15rem] text-[var(--primary)]" />
+				<span class="text-sm font-semibold tracking-wide">小屋足迹</span>
+			</div>
+			<p class="text-75 text-sm leading-relaxed">
+				小屋已亮灯
+				<span class="font-bold text-[var(--primary)] text-lg mx-1 tabular-nums">{days}</span>
+				天
+			</p>
+			<p class="text-50 text-xs mt-1.5">
+				从 {conf.startDate} 起，一点点堆起的文字与风景。
+			</p>
+			{
+				funConfig.busuanzi && (
+					<p class="text-50 text-xs mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
+						<span>
+							本站访客
+							<span id="busuanzi_value_site_uv" class="mx-0.5 font-semibold text-75">-</span>
+						</span>
+						<span>
+							总访问
+							<span id="busuanzi_value_site_pv" class="mx-0.5 font-semibold text-75">-</span>
+						</span>
+					</p>
+				)
+			}
+		</div>
+	)
+}

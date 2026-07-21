@@ -1,0 +1,68 @@
+---
+import { funConfig } from "../../config";
+const enabled = funConfig.readingProgress;
+---
+
+{
+	enabled && (
+		<div id="reading-progress" class="reading-progress" aria-hidden="true">
+			<div id="reading-progress-bar" class="reading-progress__bar" />
+		</div>
+	)
+}
+
+{
+	enabled && (
+		<script>
+			(() => {
+				const bar = document.getElementById("reading-progress-bar");
+				if (!bar) return;
+
+				function update() {
+					const doc = document.documentElement;
+					const scrollTop = window.scrollY || doc.scrollTop;
+					const height = doc.scrollHeight - window.innerHeight;
+					const p = height > 0 ? Math.min(1, Math.max(0, scrollTop / height)) : 0;
+					bar!.style.transform = `scaleX(${p})`;
+				}
+
+				update();
+				window.addEventListener("scroll", update, { passive: true });
+				window.addEventListener("resize", update);
+				document.addEventListener("swup:page:view", () => {
+					requestAnimationFrame(update);
+				});
+			})();
+		</script>
+	)
+}
+
+{
+	enabled && (
+		<style is:global>
+			.reading-progress {
+				position: fixed;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 3px;
+				z-index: 100;
+				pointer-events: none;
+				background: transparent;
+			}
+			.reading-progress__bar {
+				height: 100%;
+				width: 100%;
+				transform-origin: left center;
+				transform: scaleX(0);
+				background: linear-gradient(
+					90deg,
+					oklch(0.72 0.12 var(--hue)),
+					oklch(0.58 0.14 var(--hue))
+				);
+				transition: transform 60ms linear;
+				box-shadow: 0 0 10px oklch(0.65 0.12 var(--hue) / 0.45);
+			}
+		</style>
+	)
+}
