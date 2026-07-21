@@ -135,8 +135,8 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
  */
 export const giscusConfig = {
 	enable: true,
-	// 例如: "HHQ-666/HHQ-666.github.io"
-	repo: "HHQ-666/HHQ-666.github.io",
+	// 博客仓库（需在该仓库 Settings → Features 开启 Discussions）
+	repo: "HHQ-666/qingge-blog",
 	// 在 https://giscus.app 配置后复制 repo-id
 	repoId: "",
 	category: "Announcements",
@@ -180,7 +180,7 @@ export const funConfig = {
 	siteDays: {
 		enable: true,
 		/** 站点启用日 YYYY-MM-DD */
-		startDate: "2025-07-17",
+		startDate: "2026-07-21",
 	},
 	/**
 	 * 华语金曲播放器（APlayer + Meting 可播放音源）

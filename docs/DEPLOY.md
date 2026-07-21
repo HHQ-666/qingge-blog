@@ -5,110 +5,100 @@
 
 ---
 
-# 清哥的小屋 · 部署与评论配置
+# 清哥的小屋 · 部署与配置
 
-这份文档只写你需要动手的几步。代码侧（`site` 配置、GitHub Actions 工作流、Giscus 组件）已经接好。
+本文档与当前线上状态对齐（Vercel 生产 + 可选 GitHub Pages 备用）。
 
 ---
 
-## 一、选一种部署方式
+## 一、部署方式
 
-### 方案 A：GitHub Pages（推荐，免费、和现有仓库流程一致）
+### 方案 A：Vercel（当前生产，推荐）
 
-线上地址会是其一：
-
-| 仓库名 | 访问地址 | `astro.config.mjs` |
-|--------|----------|--------------------|
-| `HHQ-666/HHQ-666.github.io`（用户主页仓库） | `https://hhq-666.github.io/` | `site: "https://hhq-666.github.io/"`, `base: "/"` |
-| `HHQ-666/任意名`（项目页） | `https://hhq-666.github.io/任意名/` | `site: "https://hhq-666.github.io"`, `base: "/任意名/"` |
-
-当前仓库已按**用户主页**配置：
+1. 打开 [vercel.com](https://vercel.com)，用 GitHub 登录  
+2. Import 仓库 `HHQ-666/qingge-blog`  
+3. Framework 选 Astro，构建配置一般可保持：  
+   - Install：`pnpm install`  
+   - Build：`pnpm build`  
+   - Output：`dist`  
+4. 确认 `astro.config.mjs` 中 `site` 与生产域名一致：
 
 ```js
 // astro.config.mjs
-site: "https://hhq-666.github.io/",
+site: "https://qingge-cabana.vercel.app/",
 base: "/",
 ```
 
-#### 你需要做的
+5. 绑定自定义域名（可选）：在 Vercel 项目 Domain 中添加，并把 DNS 指到 Vercel；同时把 `site` 改成你的域名。
 
-1. **在 GitHub 新建仓库**（如果还没有）  
-   - 主页站：仓库名必须是 `HHQ-666.github.io`  
-   - 或任意名项目站（记得改 `base`）
+项目根目录已有 `vercel.json`（可为空对象），一般无需再改。
 
-2. **把本地代码推到你的仓库**（当前 `origin` 还指向模板上游 `saicaca/fuwari`）：
+### 方案 B：GitHub Pages（备用）
+
+仓库已包含 [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml)。
+
+| 仓库形态 | 访问地址 | `astro.config.mjs` |
+|----------|----------|--------------------|
+| 用户主页 `HHQ-666.github.io` | `https://hhq-666.github.io/` | `site: "https://hhq-666.github.io/"`, `base: "/"` |
+| 项目页 `qingge-blog` | `https://hhq-666.github.io/qingge-blog/` | `site: "https://hhq-666.github.io"`, `base: "/qingge-blog/"` |
+
+启用步骤：
+
+1. 仓库 → **Settings** → **Pages** → **Source** 选 **GitHub Actions**  
+2. 按上表改好 `site` / `base` 后推送 `main`  
+3. 若长期只用 Vercel，可在仓库 Settings → Actions 中禁用该 workflow，避免重复构建
+
+### Git 远程
 
 ```bash
-# 1）把模板上游改名为 upstream（可选，方便以后同步模板）
-git remote rename origin upstream
-
-# 2）添加你自己的仓库
-git remote add origin https://github.com/HHQ-666/HHQ-666.github.io.git
-
-# 3）提交本地改动后推送
-git add -A
-git commit -m "feat: 初始化清哥的小屋博客"
-git push -u origin main
+git remote -v
+# origin    https://github.com/HHQ-666/qingge-blog.git
+# upstream  https://github.com/saicaca/fuwari.git   # 可选，用于同步模板
 ```
-
-3. **打开 GitHub Pages**  
-   仓库 → **Settings** → **Pages** → **Build and deployment** → **Source** 选 **GitHub Actions**。
-
-4. 推送 `main` 后会自动跑 [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml)，大约几分钟后可访问。
-
-5. （可选）自定义域名：Pages 设置里填域名，并把 DNS 指到 GitHub；然后把 `astro.config.mjs` 的 `site` 改成你的域名。
-
-### 方案 B：Vercel（更简单的图形界面）
-
-1. 打开 [vercel.com](https://vercel.com) 用 GitHub 登录  
-2. Import 你的博客仓库  
-3. Framework 选 Astro，构建命令保持默认即可：  
-   - Build：`pnpm build`  
-   - Output：`dist`  
-4. 把 `astro.config.mjs` 的 `site` 改成 Vercel 给你的域名，例如 `https://xxx.vercel.app/`  
-5. 项目已有空的 `vercel.json`，一般无需再改
 
 ---
 
-## 二、Giscus 评论（基于 GitHub Discussions）
+## 二、Giscus 评论（GitHub Discussions）
 
-文章页已接入 [`src/components/Comment.astro`](../src/components/Comment.astro)，开关在 [`src/config.ts`](../src/config.ts) 的 `giscusConfig`。
+文章页组件：[`src/components/Comment.astro`](../src/components/Comment.astro)  
+开关与配置：[`src/config.ts`](../src/config.ts) → `giscusConfig`
 
 ### 启用步骤
 
-1. 博客仓库 **Settings → General → Features** 勾选 **Discussions**  
+1. 在 **博客仓库**（`HHQ-666/qingge-blog`）→ **Settings → General → Features** 勾选 **Discussions**  
 2. 打开 [giscus.app](https://giscus.app/zh-CN)  
-3. 填入仓库（如 `HHQ-666/HHQ-666.github.io`），按页面提示：  
+3. 填入仓库 `HHQ-666/qingge-blog`，按页面提示：  
    - 安装 **giscus** GitHub App 并授权该仓库  
-   - 选择 Discussion 分类（常用 `Announcements`）  
+   - Discussion 分类常用 `Announcements`  
    - mapping 选 **pathname**（与代码一致）  
-4. 页面下方会生成 `data-repo-id`、`data-category-id` 等  
+4. 复制生成的 `data-repo-id`、`data-category-id`  
 5. 填进 `src/config.ts`：
 
 ```ts
 export const giscusConfig = {
-  enable: true,                         // 打开
-  repo: "HHQ-666/HHQ-666.github.io",    // 你的仓库
-  repoId: "R_xxxx",                     // 从 giscus.app 复制
+  enable: true,
+  repo: "HHQ-666/qingge-blog",
+  repoId: "R_xxxx",          // 从 giscus.app 复制
   category: "Announcements",
-  categoryId: "DIC_xxxx",               // 从 giscus.app 复制
+  categoryId: "DIC_xxxx",    // 从 giscus.app 复制
   // 其余保持默认即可
 };
 ```
 
 6. 提交并部署后，打开任意文章页底部即可评论（访客需登录 GitHub）。
 
-> 未填 `repoId` / `categoryId` 或 `enable: false` 时，评论区不会渲染，站点仍可正常访问。
+> 未填 `repoId` / `categoryId` 时，文章页会显示「待开启」引导卡片，不会加载 giscus 脚本。  
+> 暂不需要评论时设 `enable: false` 即可隐藏整块区域。
 
 ---
 
 ## 三、上线前自检清单
 
-- [ ] `git remote -v` 指向你自己的仓库，而不是 `saicaca/fuwari`  
-- [ ] `astro.config.mjs` 的 `site` / `base` 与最终域名一致  
-- [ ] Pages Source 为 GitHub Actions（或 Vercel 已成功 Deploy）  
-- [ ] 本地 `pnpm build` 无报错  
-- [ ] （可选）Giscus `enable: true` 且 id 已填  
+- [x] `git remote` 的 `origin` 指向 `HHQ-666/qingge-blog`
+- [x] `astro.config.mjs` 的 `site` 为 Vercel 生产域名
+- [ ] 本地 `pnpm build` 无报错
+- [ ] （可选）Giscus `repoId` / `categoryId` 已填
+- [ ] （可选）自定义域名与 `site` 一致
 
 ---
 
@@ -118,23 +108,29 @@ export const giscusConfig = {
 pnpm dev      # 本地开发 http://localhost:4321
 pnpm build    # 生产构建 + pagefind 搜索索引
 pnpm preview  # 预览构建结果
+pnpm check    # Astro / TS 诊断
+pnpm new-post <filename>  # 新建文章
 ```
 
 ---
 
 ## 五、背景音乐说明
 
-右下角悬浮播放器使用的是 **CC 授权免费轻音乐**（Kevin MacLeod / Chad Crouch），**不是** 周杰伦等商业版权流行金曲。
+右下角悬浮播放器配置在 `src/config.ts` → `funConfig.musicPlayer`。
 
-- 曲目目录：`public/media/music/`
-- 开关与歌单：`src/config.ts` → `funConfig.musicPlayer`
-- 若要换成真正的 80/90 流行老歌：请自行确保版权合规，再替换该目录下的 mp3，并改 `tracks` 配置。
+当前实现通过 **Meting 代理**（默认 `https://api.qijieya.cn/meting/`）拉取网易云曲目元数据与试听/播放地址。
+
+注意：
+
+- 第三方代理可能失效、限流或返回试听片段；失效时请更换 `api` 或暂时 `enable: false`
+- 华语流行曲多为商业版权作品，个人站公开播放存在合规风险；更稳妥的做法是使用 **自有 / CC 授权** 的本地音频
+- 若改为本地曲目：把音频放到 `public/media/music/`，并相应改播放器实现与配置
 
 ---
 
 ## 六、功能开关速查
 
-都在 `src/config.ts` 的 `funConfig` / `giscusConfig` / `siteConfig.banner`：
+都在 `src/config.ts`：
 
 | 功能 | 配置项 |
 |------|--------|
@@ -144,5 +140,6 @@ pnpm preview  # 预览构建结果
 | 今日一言 | `funConfig.hitokoto` |
 | 阅读进度条 | `funConfig.readingProgress` |
 | 鼠标粒子 | `funConfig.cursorTrail` |
-| 访问统计 | `funConfig.busuanzi` |
+| 访问统计（不蒜子） | `funConfig.busuanzi` |
+| 站点运行天数 | `funConfig.siteDays`（`startDate`） |
 | 评论 | `giscusConfig` |
