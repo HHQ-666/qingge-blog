@@ -29,24 +29,35 @@ const videoSrc = banner.video?.src || "";
 				/>
 			</div>
 
-			{/* 桌面端：视频 + poster 首帧；src 由脚本在桌面才挂载，避免移动端误下载 */}
-			<video
-				id="banner-video"
-				class="banner-media__video absolute inset-0 w-full h-full object-cover hidden md:block"
-				style={`object-position: ${position}`}
-				muted
-				loop
-				playsinline
-				preload="none"
-				aria-hidden="true"
-			/>
-			<div class="banner-media__poster absolute inset-0 hidden md:block">
-				<ImageWrapper
-					src={posterSrc}
-					alt="Banner poster"
-					position={position}
-					class="w-full h-full"
+			{/*
+			  桌面端：双视频交叉淡入淡出，避免原生 loop 跳回 0 时卡一下。
+			  src 由脚本在桌面才挂载，移动端不请求 mp4。
+			*/}
+			<div class="banner-media__desktop absolute inset-0 hidden md:block" aria-hidden="true">
+				<video
+					id="banner-video-a"
+					class="banner-media__video is-active"
+					style={`object-position: ${position}`}
+					muted
+					playsinline
+					preload="none"
 				/>
+				<video
+					id="banner-video-b"
+					class="banner-media__video"
+					style={`object-position: ${position}`}
+					muted
+					playsinline
+					preload="none"
+				/>
+				<div class="banner-media__poster absolute inset-0">
+					<ImageWrapper
+						src={posterSrc}
+						alt="Banner poster"
+						position={position}
+						class="w-full h-full"
+					/>
+				</div>
 			</div>
 		</div>
 	) : (
@@ -65,14 +76,34 @@ const videoSrc = banner.video?.src || "";
 		<script is:inline>
 			(function () {
 				const DESKTOP_MQ = "(min-width: 768px)";
+				/** 距片尾多少秒开始交叉淡入（掩盖 seek 卡顿） */
+				const CROSSFADE_LEAD = 0.45;
+				const CROSSFADE_MS = 420;
+
 				const root = document.getElementById("banner");
-				const video = document.getElementById("banner-video");
-				if (!root || !video || !(video instanceof HTMLVideoElement)) return;
-				if (root.getAttribute("data-video-enabled") !== "1") return;
+				if (!root || root.getAttribute("data-video-enabled") !== "1") return;
+				if (root.dataset.bannerBooted === "1") return;
+				root.dataset.bannerBooted = "1";
 
 				const videoSrc = root.getAttribute("data-video-src") || "";
+				const va = document.getElementById("banner-video-a");
+				const vb = document.getElementById("banner-video-b");
 				const poster = root.querySelector(".banner-media__poster");
+				if (
+					!videoSrc ||
+					!(va instanceof HTMLVideoElement) ||
+					!(vb instanceof HTMLVideoElement)
+				) {
+					return;
+				}
+
 				let desktopReady = false;
+				/** @type {HTMLVideoElement} */
+				let active = va;
+				/** @type {HTMLVideoElement} */
+				let standby = vb;
+				let crossfading = false;
+				let watchTimer = 0;
 
 				function hidePoster() {
 					if (poster) poster.classList.add("is-hidden");
@@ -81,34 +112,134 @@ const videoSrc = banner.video?.src || "";
 					if (poster) poster.classList.remove("is-hidden");
 				}
 
-				function teardownVideo() {
+				function clearSrc(el) {
 					try {
-						video.pause();
+						el.pause();
 					} catch (_) {}
-					video.removeAttribute("src");
-					while (video.firstChild) video.removeChild(video.firstChild);
-					video.load();
+					el.removeAttribute("src");
+					el.load();
+				}
+
+				function stopWatch() {
+					if (watchTimer) {
+						clearInterval(watchTimer);
+						watchTimer = 0;
+					}
+				}
+
+				function teardownVideo() {
+					stopWatch();
+					clearSrc(va);
+					clearSrc(vb);
+					va.classList.add("is-active");
+					vb.classList.remove("is-active");
+					active = va;
+					standby = vb;
+					crossfading = false;
 					showPoster();
 					desktopReady = false;
 				}
 
-				function setupDesktopVideo() {
-					if (!videoSrc) return;
-					if (desktopReady && video.getAttribute("src")) {
-						tryPlay();
-						return;
+				function tryPlay(el) {
+					const p = el.play();
+					if (p && typeof p.catch === "function") {
+						p.catch(function () {});
 					}
-					// 仅桌面挂载源，手机端永远不会请求 mp4
-					video.setAttribute("src", videoSrc);
-					video.setAttribute("autoplay", "");
-					video.setAttribute("preload", "metadata");
-					desktopReady = true;
-					tryPlay();
 				}
 
-				function tryPlay() {
-					const p = video.play();
-					if (p && typeof p.catch === "function") p.catch(function () {});
+				function onFirstFrame() {
+					hidePoster();
+					va.removeEventListener("playing", onFirstFrame);
+					va.removeEventListener("loadeddata", onFirstFrame);
+				}
+
+				function armSources() {
+					va.setAttribute("src", videoSrc);
+					vb.setAttribute("src", videoSrc);
+					va.setAttribute("preload", "auto");
+					vb.setAttribute("preload", "auto");
+					try {
+						va.load();
+						vb.load();
+					} catch (_) {}
+				}
+
+				function swapRoles() {
+					const prev = active;
+					active = standby;
+					standby = prev;
+					active.classList.add("is-active");
+					standby.classList.remove("is-active");
+					try {
+						standby.pause();
+						if (standby.readyState >= 1) {
+							standby.currentTime = 0;
+						}
+					} catch (_) {}
+					crossfading = false;
+				}
+
+				function beginCrossfade() {
+					if (crossfading || !desktopReady) return;
+					if (!window.matchMedia(DESKTOP_MQ).matches) return;
+
+					const dur = active.duration;
+					if (!isFinite(dur) || dur <= CROSSFADE_LEAD + 0.2) {
+						try {
+							active.currentTime = 0;
+							tryPlay(active);
+						} catch (_) {}
+						return;
+					}
+
+					crossfading = true;
+					try {
+						if (standby.readyState < 2) {
+							standby.load();
+						}
+						standby.currentTime = 0;
+					} catch (_) {}
+					tryPlay(standby);
+
+					requestAnimationFrame(function () {
+						standby.classList.add("is-active");
+						active.classList.remove("is-active");
+						window.setTimeout(swapRoles, CROSSFADE_MS);
+					});
+				}
+
+				function startWatch() {
+					if (watchTimer) return;
+					watchTimer = window.setInterval(function () {
+						if (!desktopReady || !window.matchMedia(DESKTOP_MQ).matches) return;
+						if (crossfading || !active) return;
+						const dur = active.duration;
+						if (!isFinite(dur) || dur <= 0) return;
+						const remain = dur - active.currentTime;
+						if (remain <= CROSSFADE_LEAD && remain >= 0) {
+							beginCrossfade();
+						}
+					}, 80);
+				}
+
+				function setupDesktopVideo() {
+					if (!videoSrc) return;
+					if (desktopReady) {
+						tryPlay(active);
+						startWatch();
+						return;
+					}
+					armSources();
+					active = va;
+					standby = vb;
+					va.classList.add("is-active");
+					vb.classList.remove("is-active");
+					va.addEventListener("playing", onFirstFrame);
+					va.addEventListener("loadeddata", onFirstFrame);
+					va.addEventListener("error", showPoster);
+					desktopReady = true;
+					tryPlay(va);
+					startWatch();
 				}
 
 				function syncToViewport() {
@@ -119,21 +250,18 @@ const videoSrc = banner.video?.src || "";
 					}
 				}
 
-				video.addEventListener("loadeddata", hidePoster);
-				video.addEventListener("playing", hidePoster);
-				video.addEventListener("error", showPoster);
-
 				syncToViewport();
-				// 窗口跨断点时切换（如平板旋转）
 				const mql = window.matchMedia(DESKTOP_MQ);
 				if (typeof mql.addEventListener === "function") {
 					mql.addEventListener("change", syncToViewport);
 				} else if (typeof mql.addListener === "function") {
 					mql.addListener(syncToViewport);
 				}
-				// Swup 页面切换后桌面端继续播
 				document.addEventListener("swup:page:view", function () {
-					if (window.matchMedia(DESKTOP_MQ).matches) tryPlay();
+					if (window.matchMedia(DESKTOP_MQ).matches) {
+						if (desktopReady) tryPlay(active);
+						else setupDesktopVideo();
+					}
 				});
 			})();
 		</script>
@@ -141,17 +269,33 @@ const videoSrc = banner.video?.src || "";
 }
 
 <style>
+	.banner-media__desktop {
+		z-index: 1;
+	}
 	.banner-media__poster {
 		transition: opacity 500ms ease;
 		pointer-events: none;
-		z-index: 2;
+		z-index: 3;
 	}
 	.banner-media__poster.is-hidden {
 		opacity: 0;
 		z-index: 0;
 	}
 	.banner-media__video {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		opacity: 0;
+		transition: opacity 420ms ease;
 		z-index: 1;
+		transform: translateZ(0);
+		backface-visibility: hidden;
+	}
+	.banner-media__video.is-active {
+		opacity: 1;
+		z-index: 2;
 	}
 	.banner-media__static {
 		z-index: 1;

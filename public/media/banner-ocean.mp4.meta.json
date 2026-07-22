@@ -7,8 +7,9 @@
   "license": "Pexels License - Free for personal and commercial use",
   "downloaded_at": "2026-07-20T07:44:30Z",
   "download_url": "https://videos.pexels.com/video-files/38456742/16331231_1280_720_30fps.mp4",
-  "width": 1280,
-  "height": 720,
+  "width": 960,
+  "height": 540,
   "duration": 11,
-  "attribution": "Video by Abbat  Studio on Pexels"
+  "attribution": "Video by Abbat  Studio on Pexels",
+  "note": "Re-encoded for smoother loop: no B-frames, keyint=30, faststart, 960x540"
 }
