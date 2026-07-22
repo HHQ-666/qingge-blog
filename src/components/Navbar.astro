@@ -24,11 +24,11 @@ let links: NavBarLink[] = navBarConfig.links.map(
     <div class="absolute h-8 left-0 right-0 -top-8 bg-[var(--card-bg)] transition"></div> <!-- used for onload animation -->
     <div class:list={[
         className,
-        "card-base !overflow-visible max-w-[var(--page-width)] h-[4.5rem] !rounded-t-none mx-auto flex items-center justify-between px-4"]}>
-        <a href={url('/')} class="btn-plain scale-animation rounded-lg h-[3.25rem] px-5 font-bold active:scale-95">
-            <div class="flex flex-row text-[var(--primary)] items-center text-md">
-                <Icon name="material-symbols:cottage-rounded" class="text-[1.75rem] mb-1 mr-2" />
-                {siteConfig.title}
+        "card-base !overflow-visible max-w-[var(--page-width)] h-[3.75rem] sm:h-[4.5rem] !rounded-t-none mx-auto flex items-center justify-between px-2.5 sm:px-4 gap-1"]}>
+        <a href={url('/')} class="btn-plain scale-animation rounded-lg h-11 sm:h-[3.25rem] px-2.5 sm:px-5 font-bold active:scale-95 min-w-0 shrink">
+            <div class="flex flex-row text-[var(--primary)] items-center text-sm sm:text-md min-w-0">
+                <Icon name="material-symbols:cottage-rounded" class="text-[1.5rem] sm:text-[1.75rem] mb-0.5 sm:mb-1 mr-1.5 sm:mr-2 shrink-0" />
+                <span class="truncate max-w-[9.5rem] xs:max-w-none">{siteConfig.title}</span>
             </div>
         </a>
         <div class="hidden md:flex">
@@ -43,17 +43,17 @@ let links: NavBarLink[] = navBarConfig.links.map(
                 </a>;
             })}
         </div>
-        <div class="flex">
+        <div class="flex items-center shrink-0">
             <!--<SearchPanel client:load>-->
             <Search client:only="svelte"></Search>
             {!siteConfig.themeColor.fixed && (
-                    <button aria-label="Display Settings" class="btn-plain scale-animation rounded-lg h-11 w-11 active:scale-90" id="display-settings-switch">
-                        <Icon name="material-symbols:palette-outline" class="text-[1.25rem]"></Icon>
+                    <button aria-label="Display Settings" class="btn-plain scale-animation rounded-lg h-10 w-10 sm:h-11 sm:w-11 active:scale-90" id="display-settings-switch">
+                        <Icon name="material-symbols:palette-outline" class="text-[1.15rem] sm:text-[1.25rem]"></Icon>
                     </button>
             )}
             <LightDarkSwitch client:only="svelte"></LightDarkSwitch>
-            <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg w-11 h-11 active:scale-90 md:!hidden" id="nav-menu-switch">
-                <Icon name="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
+            <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg h-10 w-10 sm:h-11 sm:w-11 active:scale-90 md:!hidden" id="nav-menu-switch">
+                <Icon name="material-symbols:menu-rounded" class="text-[1.15rem] sm:text-[1.25rem]"></Icon>
             </button>
         </div>
         <NavMenuPanel links={links}></NavMenuPanel>

@@ -4,7 +4,6 @@ import { siteConfig } from "../config";
 
 const banner = siteConfig.banner;
 const videoEnabled = Boolean(banner.video?.enable && banner.video?.src);
-/** 移动端静态大海图（与 PC 视频分离，避免手机下载 3MB 视频） */
 const staticSrc = banner.src;
 const posterSrc = banner.video?.poster || banner.src;
 const position = banner.position || "center";
@@ -19,45 +18,37 @@ const videoSrc = banner.video?.src || "";
 			data-video-src={videoSrc}
 			data-video-enabled="1"
 		>
-			{/* 移动端：仅静态图，DOM 里不带可播放 video 源 */}
-			<div class="banner-media__static md:hidden absolute inset-0">
+			{/*
+			  全端双视频交叉淡入：PC / 移动都播放。
+			  无原生 loop 硬切；poster 作首帧与失败兜底。
+			*/}
+			<video
+				id="banner-video-a"
+				class="banner-media__video is-active"
+				style={`object-position: ${position}`}
+				muted
+				playsinline
+				webkit-playsinline
+				preload="metadata"
+				aria-hidden="true"
+			/>
+			<video
+				id="banner-video-b"
+				class="banner-media__video"
+				style={`object-position: ${position}`}
+				muted
+				playsinline
+				webkit-playsinline
+				preload="metadata"
+				aria-hidden="true"
+			/>
+			<div class="banner-media__poster absolute inset-0">
 				<ImageWrapper
-					src={staticSrc}
-					alt="Banner image of the blog"
+					src={posterSrc}
+					alt="Banner poster"
 					position={position}
 					class="w-full h-full"
 				/>
-			</div>
-
-			{/*
-			  桌面端：双视频交叉淡入淡出，避免原生 loop 跳回 0 时卡一下。
-			  src 由脚本在桌面才挂载，移动端不请求 mp4。
-			*/}
-			<div class="banner-media__desktop absolute inset-0 hidden md:block" aria-hidden="true">
-				<video
-					id="banner-video-a"
-					class="banner-media__video is-active"
-					style={`object-position: ${position}`}
-					muted
-					playsinline
-					preload="none"
-				/>
-				<video
-					id="banner-video-b"
-					class="banner-media__video"
-					style={`object-position: ${position}`}
-					muted
-					playsinline
-					preload="none"
-				/>
-				<div class="banner-media__poster absolute inset-0">
-					<ImageWrapper
-						src={posterSrc}
-						alt="Banner poster"
-						position={position}
-						class="w-full h-full"
-					/>
-				</div>
 			</div>
 		</div>
 	) : (
@@ -75,7 +66,6 @@ const videoSrc = banner.video?.src || "";
 	videoEnabled && (
 		<script is:inline>
 			(function () {
-				const DESKTOP_MQ = "(min-width: 768px)";
 				/** 距片尾多少秒开始交叉淡入（掩盖 seek 卡顿） */
 				const CROSSFADE_LEAD = 0.45;
 				const CROSSFADE_MS = 420;
@@ -97,7 +87,7 @@ const videoSrc = banner.video?.src || "";
 					return;
 				}
 
-				let desktopReady = false;
+				let ready = false;
 				/** @type {HTMLVideoElement} */
 				let active = va;
 				/** @type {HTMLVideoElement} */
@@ -110,34 +100,6 @@ const videoSrc = banner.video?.src || "";
 				}
 				function showPoster() {
 					if (poster) poster.classList.remove("is-hidden");
-				}
-
-				function clearSrc(el) {
-					try {
-						el.pause();
-					} catch (_) {}
-					el.removeAttribute("src");
-					el.load();
-				}
-
-				function stopWatch() {
-					if (watchTimer) {
-						clearInterval(watchTimer);
-						watchTimer = 0;
-					}
-				}
-
-				function teardownVideo() {
-					stopWatch();
-					clearSrc(va);
-					clearSrc(vb);
-					va.classList.add("is-active");
-					vb.classList.remove("is-active");
-					active = va;
-					standby = vb;
-					crossfading = false;
-					showPoster();
-					desktopReady = false;
 				}
 
 				function tryPlay(el) {
@@ -180,8 +142,7 @@ const videoSrc = banner.video?.src || "";
 				}
 
 				function beginCrossfade() {
-					if (crossfading || !desktopReady) return;
-					if (!window.matchMedia(DESKTOP_MQ).matches) return;
+					if (crossfading || !ready) return;
 
 					const dur = active.duration;
 					if (!isFinite(dur) || dur <= CROSSFADE_LEAD + 0.2) {
@@ -211,8 +172,9 @@ const videoSrc = banner.video?.src || "";
 				function startWatch() {
 					if (watchTimer) return;
 					watchTimer = window.setInterval(function () {
-						if (!desktopReady || !window.matchMedia(DESKTOP_MQ).matches) return;
-						if (crossfading || !active) return;
+						if (!ready || crossfading || !active) return;
+						// 页面不可见时不切换，省电
+						if (document.hidden) return;
 						const dur = active.duration;
 						if (!isFinite(dur) || dur <= 0) return;
 						const remain = dur - active.currentTime;
@@ -222,9 +184,9 @@ const videoSrc = banner.video?.src || "";
 					}, 80);
 				}
 
-				function setupDesktopVideo() {
+				function setupVideo() {
 					if (!videoSrc) return;
-					if (desktopReady) {
+					if (ready) {
 						tryPlay(active);
 						startWatch();
 						return;
@@ -237,31 +199,27 @@ const videoSrc = banner.video?.src || "";
 					va.addEventListener("playing", onFirstFrame);
 					va.addEventListener("loadeddata", onFirstFrame);
 					va.addEventListener("error", showPoster);
-					desktopReady = true;
+					ready = true;
 					tryPlay(va);
 					startWatch();
 				}
 
-				function syncToViewport() {
-					if (window.matchMedia(DESKTOP_MQ).matches) {
-						setupDesktopVideo();
-					} else {
-						teardownVideo();
-					}
+				// 用户轻触后再次尝试播放（兼容部分移动浏览器策略）
+				function unlockOnce() {
+					if (ready) tryPlay(active);
+					document.removeEventListener("touchstart", unlockOnce);
+					document.removeEventListener("click", unlockOnce);
 				}
+				document.addEventListener("touchstart", unlockOnce, { passive: true, once: true });
+				document.addEventListener("click", unlockOnce, { once: true });
 
-				syncToViewport();
-				const mql = window.matchMedia(DESKTOP_MQ);
-				if (typeof mql.addEventListener === "function") {
-					mql.addEventListener("change", syncToViewport);
-				} else if (typeof mql.addListener === "function") {
-					mql.addListener(syncToViewport);
-				}
+				setupVideo();
 				document.addEventListener("swup:page:view", function () {
-					if (window.matchMedia(DESKTOP_MQ).matches) {
-						if (desktopReady) tryPlay(active);
-						else setupDesktopVideo();
-					}
+					if (ready) tryPlay(active);
+					else setupVideo();
+				});
+				document.addEventListener("visibilitychange", function () {
+					if (!document.hidden && ready) tryPlay(active);
 				});
 			})();
 		</script>
@@ -269,9 +227,6 @@ const videoSrc = banner.video?.src || "";
 }
 
 <style>
-	.banner-media__desktop {
-		z-index: 1;
-	}
 	.banner-media__poster {
 		transition: opacity 500ms ease;
 		pointer-events: none;
@@ -296,8 +251,5 @@ const videoSrc = banner.video?.src || "";
 	.banner-media__video.is-active {
 		opacity: 1;
 		z-index: 2;
-	}
-	.banner-media__static {
-		z-index: 1;
 	}
 </style>

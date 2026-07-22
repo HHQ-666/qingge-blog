@@ -17,37 +17,37 @@ const name = profileConfig.name;
 	<div class="home-hero__glow pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full opacity-60 blur-3xl"></div>
 	<div class="home-hero__glow-soft pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full opacity-40 blur-3xl"></div>
 
-	<div class="relative z-10 flex flex-col gap-5 px-6 py-7 md:px-9 md:py-8">
-		<div class="flex items-start gap-4">
-			<div class="home-hero__icon shrink-0 flex h-12 w-12 items-center justify-center rounded-2xl">
-				<Icon name="material-symbols:cottage-rounded" class="text-[1.75rem] text-[var(--primary)]" />
+	<div class="relative z-10 flex flex-col gap-4 sm:gap-5 px-4 py-5 sm:px-6 sm:py-7 md:px-9 md:py-8">
+		<div class="flex items-start gap-3 sm:gap-4">
+			<div class="home-hero__icon shrink-0 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
+				<Icon name="material-symbols:cottage-rounded" class="text-[1.45rem] sm:text-[1.75rem] text-[var(--primary)]" />
 			</div>
 			<div class="min-w-0 flex-1">
-				<p class="mb-1 text-sm font-medium tracking-wide text-[var(--primary)]">
+				<p class="mb-1 text-xs sm:text-sm font-medium tracking-wide text-[var(--primary)]">
 					Hi，我是 {name}
 				</p>
-				<h1 class="text-2xl md:text-3xl font-bold text-90 leading-snug">
+				<h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-90 leading-snug">
 					{welcome}
 				</h1>
-				<p class="mt-2 text-75 leading-relaxed max-w-2xl">
+				<p class="mt-1.5 sm:mt-2 text-75 leading-relaxed max-w-2xl text-[0.9rem] sm:text-base">
 					{subtitle}。这里放着前端踩坑笔记、面试整理与日常思考——先看看湖光山色，再推门进来坐坐。
 				</p>
 			</div>
 		</div>
 
-		<div class="flex flex-wrap items-center gap-2.5">
+		<div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
 			<a
 				href={url("/archive/")}
-				class="btn-regular home-hero__cta rounded-xl h-10 px-4 gap-2 font-semibold active:scale-95"
+				class="btn-regular home-hero__cta rounded-xl h-9 sm:h-10 px-3.5 sm:px-4 gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold active:scale-95"
 			>
-				<Icon name="material-symbols:library-books-rounded" class="text-[1.15rem]" />
+				<Icon name="material-symbols:library-books-rounded" class="text-[1.1rem] sm:text-[1.15rem]" />
 				全部文章
 			</a>
 			<a
 				href={url("/about/")}
-				class="btn-plain home-hero__ghost rounded-xl h-10 px-4 gap-2 font-semibold active:scale-95"
+				class="btn-plain home-hero__ghost rounded-xl h-9 sm:h-10 px-3.5 sm:px-4 gap-1.5 sm:gap-2 text-sm sm:text-base font-semibold active:scale-95"
 			>
-				<Icon name="material-symbols:person-rounded" class="text-[1.15rem]" />
+				<Icon name="material-symbols:person-rounded" class="text-[1.1rem] sm:text-[1.15rem]" />
 				关于我
 			</a>
 			{

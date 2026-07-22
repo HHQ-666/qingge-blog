@@ -17,9 +17,9 @@ export const siteConfig: SiteConfig = {
 	},
 	banner: {
 		enable: true,
-		// 移动端静态大海图（PC 仍用下方视频，互不影响）
+		// 静态兜底图（视频关闭/失败时使用；视频开启时全端播放）
 		src: "assets/images/banner-ocean-static.jpg",
-		// 桌面端动态大海 Banner（相对 public；移动端不会下载）
+		// 动态大海 Banner（相对 public；PC/移动端均播放）
 		video: {
 			enable: true,
 			src: "/media/banner-ocean.mp4",

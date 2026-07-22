@@ -6,34 +6,115 @@ import ImageWrapper from "../misc/ImageWrapper.astro";
 
 const config = profileConfig;
 ---
-<div class="card-base p-3">
-    <a aria-label="Go to About Page" href={url('/about/')}
-       class="group block relative mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3
-       max-w-[12rem] lg:max-w-none overflow-hidden rounded-xl active:scale-95">
-        <div class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
-        w-full h-full z-50 flex items-center justify-center">
-            <Icon name="fa6-regular:address-card"
-                  class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-5xl">
-            </Icon>
-        </div>
-        <ImageWrapper src={config.avatar || ""} alt="Profile Image of the Author" class="mx-auto lg:w-full h-full lg:mt-0 "></ImageWrapper>
-    </a>
-    <div class="px-2">
-        <div class="font-bold text-xl text-center mb-1 dark:text-neutral-50 transition">{config.name}</div>
-        <div class="h-1 w-5 bg-[var(--primary)] mx-auto rounded-full mb-2 transition"></div>
-        <div class="text-center text-neutral-400 mb-2.5 transition">{config.bio}</div>
-        <div class="flex flex-wrap gap-2 justify-center mb-1">
-            {config.links.length > 1 && config.links.map(item =>
-                    <a rel="me" aria-label={item.name} href={item.url} target="_blank" class="btn-regular rounded-lg h-10 w-10 active:scale-90">
-                        <Icon name={item.icon} class="text-[1.5rem]"></Icon>
-                    </a>
-            )}
-            {config.links.length == 1 && <a rel="me" aria-label={config.links[0].name} href={config.links[0].url} target="_blank"
-                                            class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95">
-                <Icon name={config.links[0].icon} class="text-[1.5rem]"></Icon>
-                {config.links[0].name}
-            </a>}
-        </div>
-    </div>
+<div class="card-base p-3 sm:p-3 profile-card">
+	<a
+		aria-label="Go to About Page"
+		href={url("/about/")}
+		class="group profile-card__avatar block relative overflow-hidden rounded-xl active:scale-95"
+	>
+		<div
+			class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50 w-full h-full z-50 flex items-center justify-center"
+		>
+			<Icon
+				name="fa6-regular:address-card"
+				class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-4xl sm:text-5xl"
+			/>
+		</div>
+		<ImageWrapper
+			src={config.avatar || ""}
+			alt="Profile Image of the Author"
+			class="w-full h-full"
+		/>
+	</a>
+	<div class="profile-card__meta min-w-0">
+		<div class="font-bold text-lg sm:text-xl text-center lg:text-center mb-1 dark:text-neutral-50 transition">
+			{config.name}
+		</div>
+		<div class="h-1 w-5 bg-[var(--primary)] mx-auto rounded-full mb-2 transition"></div>
+		<div class="text-center text-neutral-400 mb-2.5 transition text-sm sm:text-base leading-relaxed">
+			{config.bio}
+		</div>
+		<div class="flex flex-wrap gap-2 justify-center mb-1">
+			{
+				config.links.length > 1 &&
+					config.links.map((item) => (
+						<a
+							rel="me"
+							aria-label={item.name}
+							href={item.url}
+							target="_blank"
+							class="btn-regular rounded-lg h-9 w-9 sm:h-10 sm:w-10 active:scale-90"
+						>
+							<Icon name={item.icon} class="text-[1.35rem] sm:text-[1.5rem]" />
+						</a>
+					))
+			}
+			{
+				config.links.length == 1 && (
+					<a
+						rel="me"
+						aria-label={config.links[0].name}
+						href={config.links[0].url}
+						target="_blank"
+						class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95"
+					>
+						<Icon name={config.links[0].icon} class="text-[1.5rem]" />
+						{config.links[0].name}
+					</a>
+				)
+			}
+		</div>
+	</div>
 </div>
 
+<style>
+	.profile-card__avatar {
+		width: 8.5rem;
+		max-width: 100%;
+		margin: 0.25rem auto 0.75rem;
+	}
+	@media (min-width: 640px) {
+		.profile-card__avatar {
+			width: 10rem;
+		}
+	}
+	@media (min-width: 1024px) {
+		.profile-card__avatar {
+			width: 100%;
+			margin: 0 0 0.75rem;
+		}
+	}
+	/* 移动端：头像 + 文案并排，减少纵向占用 */
+	@media (max-width: 1023px) {
+		.profile-card {
+			display: grid;
+			grid-template-columns: 5.75rem minmax(0, 1fr);
+			column-gap: 0.9rem;
+			row-gap: 0.35rem;
+			align-items: center;
+			padding: 0.85rem 0.95rem !important;
+		}
+		.profile-card__avatar {
+			width: 5.75rem;
+			margin: 0;
+			aspect-ratio: 1;
+		}
+		.profile-card__meta {
+			min-width: 0;
+		}
+		.profile-card__meta .text-center,
+		.profile-card__meta .font-bold {
+			text-align: left;
+		}
+		.profile-card__meta .mx-auto {
+			margin-left: 0;
+			margin-right: auto;
+		}
+		.profile-card__meta .justify-center {
+			justify-content: flex-start;
+		}
+		.profile-card__meta .mb-2\.5 {
+			margin-bottom: 0.55rem;
+		}
+	}
+</style>

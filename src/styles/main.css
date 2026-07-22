@@ -150,3 +150,29 @@
     }
   }
 }
+
+/* mobile-polish */
+@media (max-width: 1023px) {
+    html, body {
+        overflow-x: clip;
+    }
+    #main-grid {
+        width: 100%;
+        max-width: 100%;
+    }
+    #content-wrapper,
+    #swup-container {
+        min-width: 0;
+        max-width: 100%;
+    }
+    #qingge-music.qm {
+        right: max(0.75rem, env(safe-area-inset-right));
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+}
+
+@media (max-width: 640px) {
+    .card-base {
+        border-radius: 0.9rem;
+    }
+}
