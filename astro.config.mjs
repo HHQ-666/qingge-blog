@@ -26,8 +26,8 @@ import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-cop
 
 // https://astro.build/config
 export default defineConfig({
-	// 生产域名（Vercel）
-	site: "https://qingge-cabana.vercel.app/",
+	// 生产域名（自定义域名 blog.hhq688.com）
+	site: "https://blog.hhq688.com/",
 	base: "/",
 	trailingSlash: "always",
 	integrations: [

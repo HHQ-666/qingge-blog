@@ -68,7 +68,7 @@ const optimizedOg = await getImage({
 	height: 630,
 	format: "jpg",
 });
-const siteOrigin = Astro.site?.origin || "https://qingge-cabana.vercel.app";
+const siteOrigin = Astro.site?.origin || "https://blog.hhq688.com";
 const ogImageUrl = new URL(optimizedOg.src, siteOrigin).href;
 
 const favicons: Favicon[] =

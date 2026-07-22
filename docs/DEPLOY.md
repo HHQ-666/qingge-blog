@@ -1,6 +1,7 @@
 ## 当前线上地址
 
-- 生产站：https://qingge-cabana.vercel.app/
+- 生产站：https://blog.hhq688.com/
+- Vercel 默认域（备用）：https://qingge-cabana.vercel.app/
 - 仓库：https://github.com/HHQ-666/qingge-blog
 
 ---
@@ -25,11 +26,11 @@
 
 ```js
 // astro.config.mjs
-site: "https://qingge-cabana.vercel.app/",
+site: "https://blog.hhq688.com/",
 base: "/",
 ```
 
-5. 绑定自定义域名（可选）：在 Vercel 项目 Domain 中添加，并把 DNS 指到 Vercel；同时把 `site` 改成你的域名。
+5. 自定义域名已绑定：`blog.hhq688.com`（Squarespace DNS → Vercel）。
 
 项目根目录已有 `vercel.json`（可为空对象），一般无需再改。
 
@@ -95,7 +96,7 @@ export const giscusConfig = {
 ## 三、上线前自检清单
 
 - [x] `git remote` 的 `origin` 指向 `HHQ-666/qingge-blog`
-- [x] `astro.config.mjs` 的 `site` 为 Vercel 生产域名
+- [x] `astro.config.mjs` 的 `site` 为自定义域名 `https://blog.hhq688.com/`
 - [ ] 本地 `pnpm build` 无报错
 - [ ] （可选）Giscus `repoId` / `categoryId` 已填
 - [ ] （可选）自定义域名与 `site` 一致
