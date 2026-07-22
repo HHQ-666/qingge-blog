@@ -22,11 +22,16 @@ export type SiteConfig = {
 	};
 	banner: {
 		enable: boolean;
+		/** 静态 Banner 图（移动端使用；视频关闭时全端使用） */
 		src: string;
-		/** 可选：动态视频 Banner（相对 public，如 /media/xxx.mp4） */
+		/**
+		 * 可选：动态视频 Banner（相对 public，如 /media/xxx.mp4）
+		 * 仅桌面端（≥768px）挂载并播放，移动端不请求视频文件
+		 */
 		video?: {
 			enable: boolean;
 			src: string;
+			/** 桌面视频首帧 / 失败兜底图 */
 			poster?: string;
 		};
 		position?: "top" | "center" | "bottom";
