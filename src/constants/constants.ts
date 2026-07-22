@@ -6,7 +6,8 @@ export const LIGHT_MODE = "light",
 export const DEFAULT_THEME = AUTO_MODE;
 
 // Banner height unit: vh
-export const BANNER_HEIGHT = 35;
+// 可见高度（移动端/非首页）；首页桌面再加 BANNER_HEIGHT_EXTEND
+export const BANNER_HEIGHT = 48;
 export const BANNER_HEIGHT_EXTEND = 30;
 export const BANNER_HEIGHT_HOME = BANNER_HEIGHT + BANNER_HEIGHT_EXTEND;
 

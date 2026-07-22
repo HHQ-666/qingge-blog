@@ -1,35 +1,46 @@
 ---
 import ImageWrapper from "./misc/ImageWrapper.astro";
 import { siteConfig } from "../config";
+import { url } from "../utils/url-utils";
 
 const banner = siteConfig.banner;
 const videoEnabled = Boolean(banner.video?.enable && banner.video?.src);
 const staticSrc = banner.src;
 const posterSrc = banner.video?.poster || banner.src;
 const position = banner.position || "center";
-const videoSrc = banner.video?.src || "";
+// 走 base path，避免部署在子路径时 404
+const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 ---
 
 {
 	videoEnabled ? (
 		<div
 			id="banner"
-			class="banner-media object-cover h-full transition duration-700 opacity-0 scale-105 relative overflow-hidden"
+			class="banner-media object-cover h-full relative overflow-hidden"
 			data-video-src={videoSrc}
 			data-video-enabled="1"
 		>
 			{/*
-			  全端双视频交叉淡入：PC / 移动都播放。
-			  无原生 loop 硬切；poster 作首帧与失败兜底。
+			  底层：静态大海图始终可见（首帧 + 失败兜底 + 移动端省流时可见）
+			  上层：双视频交叉淡入；成功播放后盖住静态图
 			*/}
+			<div class="banner-media__static absolute inset-0" aria-hidden="true">
+				<ImageWrapper
+					src={staticSrc}
+					alt=""
+					position={position}
+					class="w-full h-full"
+				/>
+			</div>
+
 			<video
 				id="banner-video-a"
 				class="banner-media__video is-active"
 				style={`object-position: ${position}`}
 				muted
 				playsinline
-				webkit-playsinline
-				preload="metadata"
+				autoplay
+				preload="auto"
 				aria-hidden="true"
 			/>
 			<video
@@ -38,10 +49,10 @@ const videoSrc = banner.video?.src || "";
 				style={`object-position: ${position}`}
 				muted
 				playsinline
-				webkit-playsinline
-				preload="metadata"
+				preload="auto"
 				aria-hidden="true"
 			/>
+
 			<div class="banner-media__poster absolute inset-0">
 				<ImageWrapper
 					src={posterSrc}
@@ -55,7 +66,7 @@ const videoSrc = banner.video?.src || "";
 		<ImageWrapper
 			id="banner"
 			alt="Banner image of the blog"
-			class:list={["object-cover h-full transition duration-700 opacity-0 scale-105"]}
+			class:list={["object-cover h-full banner-media--static"]}
 			src={staticSrc}
 			position={position}
 		/>
@@ -69,6 +80,8 @@ const videoSrc = banner.video?.src || "";
 				/** 距片尾多少秒开始交叉淡入（掩盖 seek 卡顿） */
 				const CROSSFADE_LEAD = 0.45;
 				const CROSSFADE_MS = 420;
+				/** 多久没播出首帧就永久保留海报（不抢流量） */
+				const FAILSAFE_MS = 3500;
 
 				const root = document.getElementById("banner");
 				if (!root || root.getAttribute("data-video-enabled") !== "1") return;
@@ -87,25 +100,55 @@ const videoSrc = banner.video?.src || "";
 					return;
 				}
 
+				// iOS 旧版：playsInline + webkit-playsinline 双保险
+				try {
+					va.setAttribute("playsinline", "");
+					va.setAttribute("webkit-playsinline", "");
+					va.muted = true;
+					va.defaultMuted = true;
+					va.playsInline = true;
+					vb.setAttribute("playsinline", "");
+					vb.setAttribute("webkit-playsinline", "");
+					vb.muted = true;
+					vb.defaultMuted = true;
+					vb.playsInline = true;
+				} catch (_) {}
+
 				let ready = false;
+				let hasFrame = false;
 				/** @type {HTMLVideoElement} */
 				let active = va;
 				/** @type {HTMLVideoElement} */
 				let standby = vb;
 				let crossfading = false;
 				let watchTimer = 0;
+				let failTimer = 0;
 
 				function hidePoster() {
 					if (poster) poster.classList.add("is-hidden");
+					root.classList.add("is-playing");
+					hasFrame = true;
+					if (failTimer) {
+						clearTimeout(failTimer);
+						failTimer = 0;
+					}
 				}
 				function showPoster() {
 					if (poster) poster.classList.remove("is-hidden");
+					root.classList.remove("is-playing");
 				}
 
 				function tryPlay(el) {
+					try {
+						el.muted = true;
+						el.defaultMuted = true;
+						el.playsInline = true;
+					} catch (_) {}
 					const p = el.play();
 					if (p && typeof p.catch === "function") {
-						p.catch(function () {});
+						p.catch(function () {
+							// 自动播放被拒时保留海报；用户轻触后再试
+						});
 					}
 				}
 
@@ -113,6 +156,7 @@ const videoSrc = banner.video?.src || "";
 					hidePoster();
 					va.removeEventListener("playing", onFirstFrame);
 					va.removeEventListener("loadeddata", onFirstFrame);
+					va.removeEventListener("canplay", onFirstFrame);
 				}
 
 				function armSources() {
@@ -142,7 +186,7 @@ const videoSrc = banner.video?.src || "";
 				}
 
 				function beginCrossfade() {
-					if (crossfading || !ready) return;
+					if (crossfading || !ready || !hasFrame) return;
 
 					const dur = active.duration;
 					if (!isFinite(dur) || dur <= CROSSFADE_LEAD + 0.2) {
@@ -172,8 +216,7 @@ const videoSrc = banner.video?.src || "";
 				function startWatch() {
 					if (watchTimer) return;
 					watchTimer = window.setInterval(function () {
-						if (!ready || crossfading || !active) return;
-						// 页面不可见时不切换，省电
+						if (!ready || !hasFrame || crossfading || !active) return;
 						if (document.hidden) return;
 						const dur = active.duration;
 						if (!isFinite(dur) || dur <= 0) return;
@@ -198,22 +241,32 @@ const videoSrc = banner.video?.src || "";
 					vb.classList.remove("is-active");
 					va.addEventListener("playing", onFirstFrame);
 					va.addEventListener("loadeddata", onFirstFrame);
+					va.addEventListener("canplay", onFirstFrame);
 					va.addEventListener("error", showPoster);
 					ready = true;
 					tryPlay(va);
 					startWatch();
+					// 超时仍未出帧：保留静态图/海报，不再空等黑屏
+					failTimer = window.setTimeout(function () {
+						if (!hasFrame) showPoster();
+					}, FAILSAFE_MS);
 				}
 
-				// 用户轻触后再次尝试播放（兼容部分移动浏览器策略）
 				function unlockOnce() {
 					if (ready) tryPlay(active);
-					document.removeEventListener("touchstart", unlockOnce);
-					document.removeEventListener("click", unlockOnce);
 				}
 				document.addEventListener("touchstart", unlockOnce, { passive: true, once: true });
 				document.addEventListener("click", unlockOnce, { once: true });
 
-				setupVideo();
+				// 等首屏绘制后再挂源，避免抢占关键资源
+				if (typeof requestIdleCallback === "function") {
+					requestIdleCallback(function () {
+						setupVideo();
+					}, { timeout: 800 });
+				} else {
+					window.setTimeout(setupVideo, 120);
+				}
+
 				document.addEventListener("swup:page:view", function () {
 					if (ready) tryPlay(active);
 					else setupVideo();
@@ -227,6 +280,19 @@ const videoSrc = banner.video?.src || "";
 }
 
 <style>
+	/* 不再依赖 JS 去掉 opacity-0：默认可见，避免移动端白屏 */
+	.banner-media {
+		opacity: 1;
+		transform: scale(1);
+		background: oklch(0.88 0.03 var(--hue));
+	}
+	:global(.dark) .banner-media {
+		background: oklch(0.28 0.03 var(--hue));
+	}
+	.banner-media__static {
+		z-index: 1;
+		pointer-events: none;
+	}
 	.banner-media__poster {
 		transition: opacity 500ms ease;
 		pointer-events: none;
@@ -236,6 +302,11 @@ const videoSrc = banner.video?.src || "";
 		opacity: 0;
 		z-index: 0;
 	}
+	/* 播放成功后可略降静态层（海报已隐藏） */
+	.banner-media.is-playing .banner-media__static {
+		opacity: 0;
+		transition: opacity 400ms ease;
+	}
 	.banner-media__video {
 		position: absolute;
 		inset: 0;
@@ -244,12 +315,26 @@ const videoSrc = banner.video?.src || "";
 		object-fit: cover;
 		opacity: 0;
 		transition: opacity 420ms ease;
-		z-index: 1;
+		z-index: 2;
 		transform: translateZ(0);
 		backface-visibility: hidden;
+		background: transparent;
 	}
 	.banner-media__video.is-active {
 		opacity: 1;
-		z-index: 2;
+	}
+	.banner-media--static {
+		/* 纯静态模式：轻入场，不挡内容 */
+		animation: banner-in 700ms ease both;
+	}
+	@keyframes banner-in {
+		from {
+			opacity: 0;
+			transform: scale(1.05);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 </style>

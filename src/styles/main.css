@@ -159,6 +159,8 @@
     #main-grid {
         width: 100%;
         max-width: 100%;
+        /* 单列：侧栏已 hidden，避免空出 order 占位 */
+        grid-template-rows: auto auto;
     }
     #content-wrapper,
     #swup-container {
@@ -174,5 +176,9 @@
 @media (max-width: 640px) {
     .card-base {
         border-radius: 0.9rem;
+    }
+    /* 移动首页欢迎卡更紧凑 */
+    .home-hero {
+        margin-bottom: 0.75rem;
     }
 }

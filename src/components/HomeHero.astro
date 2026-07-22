@@ -2,10 +2,13 @@
 import { Icon } from "astro-icon/components";
 import { profileConfig, siteConfig } from "../config";
 import { url } from "../utils/url-utils";
+import ImageWrapper from "./misc/ImageWrapper.astro";
 
 const welcome = `欢迎来到${siteConfig.title}`;
 const subtitle = siteConfig.subtitle;
 const name = profileConfig.name;
+const bio = profileConfig.bio;
+const avatar = profileConfig.avatar || "";
 ---
 
 <section
@@ -17,20 +20,36 @@ const name = profileConfig.name;
 	<div class="home-hero__glow pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full opacity-60 blur-3xl"></div>
 	<div class="home-hero__glow-soft pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full opacity-40 blur-3xl"></div>
 
-	<div class="relative z-10 flex flex-col gap-4 sm:gap-5 px-4 py-5 sm:px-6 sm:py-7 md:px-9 md:py-8">
+	<div class="relative z-10 flex flex-col gap-3.5 sm:gap-5 px-4 py-4 sm:px-6 sm:py-7 md:px-9 md:py-8">
 		<div class="flex items-start gap-3 sm:gap-4">
-			<div class="home-hero__icon shrink-0 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl">
-				<Icon name="material-symbols:cottage-rounded" class="text-[1.45rem] sm:text-[1.75rem] text-[var(--primary)]" />
+			{/* 移动端：头像；桌面：小屋图标（侧栏已有头像） */}
+			<a
+				href={url("/about/")}
+				aria-label="关于我"
+				class="home-hero__avatar lg:hidden shrink-0 overflow-hidden rounded-2xl active:scale-95"
+			>
+				<ImageWrapper
+					src={avatar}
+					alt={name}
+					class="w-full h-full"
+				/>
+			</a>
+			<div class="home-hero__icon hidden lg:flex shrink-0 h-12 w-12 items-center justify-center rounded-2xl">
+				<Icon name="material-symbols:cottage-rounded" class="text-[1.75rem] text-[var(--primary)]" />
 			</div>
+
 			<div class="min-w-0 flex-1">
-				<p class="mb-1 text-xs sm:text-sm font-medium tracking-wide text-[var(--primary)]">
+				<p class="mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium tracking-wide text-[var(--primary)]">
 					Hi，我是 {name}
 				</p>
-				<h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-90 leading-snug">
+				<h1 class="text-lg sm:text-2xl md:text-3xl font-bold text-90 leading-snug">
 					{welcome}
 				</h1>
-				<p class="mt-1.5 sm:mt-2 text-75 leading-relaxed max-w-2xl text-[0.9rem] sm:text-base">
-					{subtitle}。这里放着前端踩坑笔记、面试整理与日常思考——先看看湖光山色，再推门进来坐坐。
+				<p class="mt-1 sm:mt-2 text-75 leading-relaxed max-w-2xl text-[0.86rem] sm:text-base">
+					<span class="sm:hidden">{bio}</span>
+					<span class="hidden sm:inline">
+						{subtitle}。这里放着前端踩坑笔记、面试整理与日常思考——先看看湖光山色，再推门进来坐坐。
+					</span>
 				</p>
 			</div>
 		</div>
@@ -57,10 +76,10 @@ const name = profileConfig.name;
 						aria-label={item.name}
 						href={item.url}
 						target="_blank"
-						class="btn-plain rounded-xl h-10 w-10 active:scale-90"
+						class="btn-plain rounded-xl h-9 w-9 sm:h-10 sm:w-10 active:scale-90"
 						title={item.name}
 					>
-						<Icon name={item.icon} class="text-[1.25rem]" />
+						<Icon name={item.icon} class="text-[1.2rem] sm:text-[1.25rem]" />
 					</a>
 				))
 			}
@@ -69,6 +88,17 @@ const name = profileConfig.name;
 </section>
 
 <style>
+	.home-hero__avatar {
+		width: 3.25rem;
+		height: 3.25rem;
+		box-shadow: inset 0 0 0 1px oklch(0.8 0.06 var(--hue) / 0.35);
+	}
+	@media (min-width: 640px) {
+		.home-hero__avatar {
+			width: 3.75rem;
+			height: 3.75rem;
+		}
+	}
 	.home-hero__glow {
 		background: oklch(0.82 0.12 var(--hue) / 0.45);
 	}

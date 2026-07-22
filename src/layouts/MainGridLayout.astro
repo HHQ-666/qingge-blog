@@ -57,7 +57,11 @@ const mainPanelTop = siteConfig.banner.enable
 </div>}
 
 <!-- Main content -->
-<div id="main-content-wrapper" class="absolute w-full z-30 pointer-events-none" style={`top: ${mainPanelTop}`}>
+<div
+	id="main-content-wrapper"
+	class="absolute w-full z-30 pointer-events-none top-[48vh] lg:top-[var(--main-panel-top)]"
+	style={`--main-panel-top: ${mainPanelTop}`}
+>
 	<!-- The pointer-events-none here prevent blocking the click event of the TOC -->
 	<div class="relative max-w-[var(--page-width)] mx-auto pointer-events-auto">
 		<div
@@ -81,7 +85,7 @@ const mainPanelTop = siteConfig.banner.enable
 				</Icon>
 			</a>}
 
-			<!-- Mobile: content first; Desktop: sidebar left, main right -->
+			<!-- Mobile: content only (sidebar hidden); Desktop: sidebar left + main right -->
 			<main id="swup-container" class="transition-swup-fade col-span-1 min-w-0 order-1 lg:order-2 overflow-hidden">
 				<div id="content-wrapper" class="onload-animation">
 					<!-- the overflow-hidden here prevent long text break the layout-->
@@ -93,7 +97,7 @@ const mainPanelTop = siteConfig.banner.enable
 				</div>
 			</main>
 
-			<SideBar class="mb-1 sm:mb-4 col-span-1 order-2 lg:order-1 lg:row-start-1 lg:max-w-[17.5rem] onload-animation" headings={headings}></SideBar>
+			<SideBar class="mb-1 sm:mb-4 col-span-1 order-2 lg:order-1 lg:row-start-1 lg:max-w-[17.5rem] onload-animation hidden lg:block" headings={headings}></SideBar>
 
 			<div class="footer col-span-1 order-3 onload-animation block lg:hidden">
 				<Footer></Footer>

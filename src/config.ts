@@ -17,20 +17,20 @@ export const siteConfig: SiteConfig = {
 	},
 	banner: {
 		enable: true,
-		// 静态兜底图（视频关闭/失败时使用；视频开启时全端播放）
+		// 静态大海图：首帧/失败兜底，始终在视频下层
 		src: "assets/images/banner-ocean-static.jpg",
-		// 动态大海 Banner（相对 public；PC/移动端均播放）
+		// 动态大海 Banner（相对 public；全端尝试播放，失败则保留静态图）
 		video: {
 			enable: true,
 			src: "/media/banner-ocean.mp4",
-			// 桌面视频首帧 / 加载失败兜底
+			// 视频首帧 / 加载失败兜底
 			poster: "assets/images/banner-ocean-poster.jpg",
 		},
 		position: "center",
 		credit: {
-			enable: true,
-			// 桌面为视频署名；移动端静态图见 banner-ocean-static.jpg.meta.json
-			text: "Ocean media on Pexels",
+			// 署名浮层已关闭；Pexels 许可信息仍保留在 public/media 与 assets 的 .meta.json
+			enable: false,
+			text: "Video by Abbat Studio on Pexels",
 			url: "https://www.pexels.com/video/tranquil-ocean-sunset-with-gentle-waves-38456742/",
 		},
 	},
