@@ -3,6 +3,7 @@ import type { GetStaticPaths } from "astro";
 import Pagination from "../components/control/Pagination.astro";
 import HomeHero from "../components/HomeHero.astro";
 import PostPage from "../components/PostPage.astro";
+import MobileHomeWidgets from "../components/widget/MobileHomeWidgets.astro";
 import { PAGE_SIZE } from "../constants/constants";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { getSortedPosts } from "../utils/content-utils";
@@ -23,6 +24,7 @@ const listDelayOffset = isHomeFirstPage ? 80 : 0;
 
 <MainGridLayout>
     {isHomeFirstPage && <HomeHero />}
+    {isHomeFirstPage && <MobileHomeWidgets />}
     <PostPage page={page} delayOffset={listDelayOffset}></PostPage>
     <Pagination class="mx-auto onload-animation" page={page} style={`animation-delay: calc(var(--content-delay) + ${listDelayOffset + (len)*50}ms)`}></Pagination>
 </MainGridLayout>

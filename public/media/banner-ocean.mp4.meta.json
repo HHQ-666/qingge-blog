@@ -5,11 +5,11 @@
   "url": "https://www.pexels.com/video/tranquil-ocean-sunset-with-gentle-waves-38456742/",
   "photographer": "Abbat  Studio",
   "license": "Pexels License - Free for personal and commercial use",
-  "downloaded_at": "2026-07-20T07:44:30Z",
+  "downloaded_at": "2026-07-23T02:52:00Z",
   "download_url": "https://videos.pexels.com/video-files/38456742/16331231_1280_720_30fps.mp4",
-  "width": 960,
-  "height": 540,
+  "width": 1280,
+  "height": 720,
   "duration": 11,
   "attribution": "Video by Abbat  Studio on Pexels",
-  "note": "Re-encoded for smoother loop: no B-frames, keyint=30, faststart, 960x540"
+  "note": "Re-encoded from the original 1280x720 source for web delivery: no B-frames, keyint=60, faststart, 1280x720"
 }
