@@ -17,13 +17,9 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 		<div
 			id="banner"
 			class="banner-media object-cover h-full relative overflow-hidden"
-			data-video-src={videoSrc}
 			data-video-enabled="1"
 		>
-			{/*
-			  底层：静态大海图始终可见（首帧 + 失败兜底 + 移动端省流时可见）
-			  上层：双视频交叉淡入；成功播放后盖住静态图
-			*/}
+			{/* 静态图负责首帧与播放失败兜底。 */}
 			<div class="banner-media__static absolute inset-0" aria-hidden="true">
 				<ImageWrapper
 					src={staticSrc}
@@ -34,22 +30,15 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 			</div>
 
 			<video
-				id="banner-video-a"
-				class="banner-media__video is-active"
+				id="banner-video"
+				class="banner-media__video"
+				src={videoSrc}
 				style={`object-position: ${position}`}
 				muted
 				playsinline
 				autoplay
-				preload="auto"
-				aria-hidden="true"
-			/>
-			<video
-				id="banner-video-b"
-				class="banner-media__video"
-				style={`object-position: ${position}`}
-				muted
-				playsinline
-				preload="auto"
+				loop
+				preload="metadata"
 				aria-hidden="true"
 			/>
 
@@ -77,10 +66,7 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 	videoEnabled && (
 		<script is:inline>
 			(function () {
-				/** 距片尾多少秒开始交叉淡入（掩盖 seek 卡顿） */
-				const CROSSFADE_LEAD = 0.45;
-				const CROSSFADE_MS = 420;
-				/** 多久没播出首帧就永久保留海报（不抢流量） */
+				/** 多久没播出首帧就保留海报。 */
 				const FAILSAFE_MS = 3500;
 
 				const root = document.getElementById("banner");
@@ -88,40 +74,20 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 				if (root.dataset.bannerBooted === "1") return;
 				root.dataset.bannerBooted = "1";
 
-				const videoSrc = root.getAttribute("data-video-src") || "";
-				const va = document.getElementById("banner-video-a");
-				const vb = document.getElementById("banner-video-b");
+				const video = document.getElementById("banner-video");
 				const poster = root.querySelector(".banner-media__poster");
-				if (
-					!videoSrc ||
-					!(va instanceof HTMLVideoElement) ||
-					!(vb instanceof HTMLVideoElement)
-				) {
-					return;
-				}
+				if (!(video instanceof HTMLVideoElement)) return;
 
-				// iOS 旧版：playsInline + webkit-playsinline 双保险
+				// iOS 旧版：playsInline + webkit-playsinline 双保险。
 				try {
-					va.setAttribute("playsinline", "");
-					va.setAttribute("webkit-playsinline", "");
-					va.muted = true;
-					va.defaultMuted = true;
-					va.playsInline = true;
-					vb.setAttribute("playsinline", "");
-					vb.setAttribute("webkit-playsinline", "");
-					vb.muted = true;
-					vb.defaultMuted = true;
-					vb.playsInline = true;
+					video.setAttribute("playsinline", "");
+					video.setAttribute("webkit-playsinline", "");
+					video.muted = true;
+					video.defaultMuted = true;
+					video.playsInline = true;
 				} catch (_) {}
 
-				let ready = false;
 				let hasFrame = false;
-				/** @type {HTMLVideoElement} */
-				let active = va;
-				/** @type {HTMLVideoElement} */
-				let standby = vb;
-				let crossfading = false;
-				let watchTimer = 0;
 				let failTimer = 0;
 
 				function hidePoster() {
@@ -138,13 +104,13 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 					root.classList.remove("is-playing");
 				}
 
-				function tryPlay(el) {
+				function tryPlay() {
 					try {
-						el.muted = true;
-						el.defaultMuted = true;
-						el.playsInline = true;
+						video.muted = true;
+						video.defaultMuted = true;
+						video.playsInline = true;
 					} catch (_) {}
-					const p = el.play();
+					const p = video.play();
 					if (p && typeof p.catch === "function") {
 						p.catch(function () {
 							// 自动播放被拒时保留海报；用户轻触后再试
@@ -154,98 +120,15 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 
 				function onFirstFrame() {
 					hidePoster();
-					va.removeEventListener("playing", onFirstFrame);
-					va.removeEventListener("loadeddata", onFirstFrame);
-					va.removeEventListener("canplay", onFirstFrame);
-				}
-
-				function armSources() {
-					va.setAttribute("src", videoSrc);
-					vb.setAttribute("src", videoSrc);
-					va.setAttribute("preload", "auto");
-					vb.setAttribute("preload", "auto");
-					try {
-						va.load();
-						vb.load();
-					} catch (_) {}
-				}
-
-				function swapRoles() {
-					const prev = active;
-					active = standby;
-					standby = prev;
-					active.classList.add("is-active");
-					standby.classList.remove("is-active");
-					try {
-						standby.pause();
-						if (standby.readyState >= 1) {
-							standby.currentTime = 0;
-						}
-					} catch (_) {}
-					crossfading = false;
-				}
-
-				function beginCrossfade() {
-					if (crossfading || !ready || !hasFrame) return;
-
-					const dur = active.duration;
-					if (!isFinite(dur) || dur <= CROSSFADE_LEAD + 0.2) {
-						try {
-							active.currentTime = 0;
-							tryPlay(active);
-						} catch (_) {}
-						return;
-					}
-
-					crossfading = true;
-					try {
-						if (standby.readyState < 2) {
-							standby.load();
-						}
-						standby.currentTime = 0;
-					} catch (_) {}
-					tryPlay(standby);
-
-					requestAnimationFrame(function () {
-						standby.classList.add("is-active");
-						active.classList.remove("is-active");
-						window.setTimeout(swapRoles, CROSSFADE_MS);
-					});
-				}
-
-				function startWatch() {
-					if (watchTimer) return;
-					watchTimer = window.setInterval(function () {
-						if (!ready || !hasFrame || crossfading || !active) return;
-						if (document.hidden) return;
-						const dur = active.duration;
-						if (!isFinite(dur) || dur <= 0) return;
-						const remain = dur - active.currentTime;
-						if (remain <= CROSSFADE_LEAD && remain >= 0) {
-							beginCrossfade();
-						}
-					}, 80);
+					video.removeEventListener("playing", onFirstFrame);
+					video.removeEventListener("loadeddata", onFirstFrame);
 				}
 
 				function setupVideo() {
-					if (!videoSrc) return;
-					if (ready) {
-						tryPlay(active);
-						startWatch();
-						return;
-					}
-					armSources();
-					active = va;
-					standby = vb;
-					va.classList.add("is-active");
-					vb.classList.remove("is-active");
-					va.addEventListener("playing", onFirstFrame);
-					va.addEventListener("loadeddata", onFirstFrame);
-					va.addEventListener("canplay", onFirstFrame);
-					va.addEventListener("error", showPoster);
-					ready = true;
-					tryPlay(va);
-					startWatch();
+					video.addEventListener("playing", onFirstFrame, { once: true });
+					video.addEventListener("loadeddata", onFirstFrame, { once: true });
+					video.addEventListener("error", showPoster);
+					tryPlay();
 					// 超时仍未出帧：保留静态图/海报，不再空等黑屏
 					failTimer = window.setTimeout(function () {
 						if (!hasFrame) showPoster();
@@ -253,7 +136,7 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 				}
 
 				function unlockOnce() {
-					if (ready) tryPlay(active);
+					tryPlay();
 				}
 				document.addEventListener("touchstart", unlockOnce, { passive: true, once: true });
 				document.addEventListener("click", unlockOnce, { once: true });
@@ -268,11 +151,10 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 				}
 
 				document.addEventListener("swup:page:view", function () {
-					if (ready) tryPlay(active);
-					else setupVideo();
+					tryPlay();
 				});
 				document.addEventListener("visibilitychange", function () {
-					if (!document.hidden && ready) tryPlay(active);
+					if (!document.hidden) tryPlay();
 				});
 			})();
 		</script>
@@ -313,15 +195,12 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		opacity: 0;
+		opacity: 1;
 		transition: opacity 420ms ease;
 		z-index: 2;
 		transform: translateZ(0);
 		backface-visibility: hidden;
 		background: transparent;
-	}
-	.banner-media__video.is-active {
-		opacity: 1;
 	}
 	.banner-media--static {
 		/* 纯静态模式：轻入场，不挡内容 */

@@ -126,8 +126,7 @@ export const licenseConfig: LicenseConfig = {
 
 export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	// Note: Some styles (such as background color) are being overridden, see the astro.config.mjs file.
-	// Please select a dark theme, as this blog theme currently only supports dark background color
-	theme: "github-dark",
+	theme: "github-light",
 };
 
 /**
@@ -139,11 +138,11 @@ export const giscusConfig = {
 	enable: true,
 	// 博客仓库（需在该仓库 Settings → Features 开启 Discussions）
 	repo: "HHQ-666/qingge-blog",
-	// 在 https://giscus.app 配置后复制 repo-id
-	repoId: "",
+	// 仓库的 GraphQL node id
+	repoId: "R_kgDOTey15Q",
 	category: "Announcements",
-	// 在 giscus.app 配置后复制 category-id
-	categoryId: "",
+	// Announcements 分类的 GraphQL node id
+	categoryId: "DIC_kwDOTey15c4DBx6i",
 	mapping: "pathname" as const,
 	strict: "0" as const,
 	reactionsEnabled: "1" as const,

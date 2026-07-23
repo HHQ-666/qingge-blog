@@ -150,6 +150,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var index = 0;
 				var seeking = false;
 				var loadPromise = null;
+				var shouldBePlaying = false;
+				var resumeTimer = 0;
+				var recovering = false;
 
 				function songIdsFingerprint() {
 					return songs.map(function (s) { return s.id; }).join(",");
@@ -209,6 +212,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (iconPause) iconPause.hidden = !on;
 					if (playBtn) playBtn.setAttribute("aria-label", on ? "暂停" : "播放");
 				}
+				function stopPlaybackIntent() {
+					shouldBePlaying = false;
+					setPlayingUI(false);
+				}
 
 				function setLoadProgress(done, total, readyCount) {
 					var ratio = total ? done / total : 0;
@@ -231,6 +238,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (!item) return;
 					if (songEl) songEl.textContent = item.name || "未知歌曲";
 					if (artistEl) artistEl.textContent = item.artist || "";
+					if ("mediaSession" in navigator && "MediaMetadata" in window) {
+						try {
+							navigator.mediaSession.metadata = new MediaMetadata({
+								title: item.name || "华语金曲",
+								artist: item.artist || "",
+								artwork: item.cover ? [{ src: item.cover }] : [],
+							});
+						} catch (e) {}
+					}
 					if (coverEl && coverFallback) {
 						if (item.cover) {
 							coverEl.onload = function () {
@@ -346,12 +362,13 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						audio.src = item.url;
 					}
 					if (autoplay) {
+						shouldBePlaying = true;
 						audio.play().then(function () { setPlayingUI(true); }).catch(function () {
 							// URL 可能过期：刷新后再播
 							refreshSongUrl(item).then(function (fresh) {
-								if (!fresh) { setPlayingUI(false); return; }
+								if (!fresh) { stopPlaybackIntent(); return; }
 								audio.src = fresh.url;
-								audio.play().then(function () { setPlayingUI(true); }).catch(function () { setPlayingUI(false); });
+								audio.play().then(function () { setPlayingUI(true); }).catch(function () { stopPlaybackIntent(); });
 							});
 						});
 					}
@@ -361,14 +378,16 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (!audio || !loaded.length) return;
 					if (!audio.getAttribute("src")) playIndex(index, true);
 					else if (audio.paused) {
+						shouldBePlaying = true;
 						audio.play().then(function () { setPlayingUI(true); }).catch(function () {
 							refreshSongUrl(loaded[index]).then(function (fresh) {
-								if (!fresh) return;
+								if (!fresh) { stopPlaybackIntent(); return; }
 								audio.src = fresh.url;
-								audio.play().then(function () { setPlayingUI(true); }).catch(function () {});
+								audio.play().then(function () { setPlayingUI(true); }).catch(function () { stopPlaybackIntent(); });
 							});
 						});
 					} else {
+						shouldBePlaying = false;
 						audio.pause();
 						setPlayingUI(false);
 					}
@@ -381,16 +400,33 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				if (audio) {
 					audio.volume = volume;
 					audio.addEventListener("play", function () { setPlayingUI(true); });
-					audio.addEventListener("pause", function () { setPlayingUI(false); });
+					audio.addEventListener("pause", function () {
+						setPlayingUI(false);
+						if (!shouldBePlaying || recovering || document.hidden || resumeTimer) return;
+						resumeTimer = window.setTimeout(function () {
+							resumeTimer = 0;
+							if (shouldBePlaying && audio.paused && !document.hidden) {
+								audio.play().catch(function () {});
+							}
+						}, 180);
+					});
 					audio.addEventListener("ended", function () { playIndex(index + 1, true); });
 					audio.addEventListener("error", function () {
 						var item = loaded[index];
-						if (!item) return;
+						if (!item || recovering) return;
 						refreshSongUrl(item).then(function (fresh) {
-							if (!fresh) return;
-							var wasPlaying = !audio.paused || root.classList.contains("is-playing");
+							if (!fresh) { stopPlaybackIntent(); return; }
+							var wasPlaying = shouldBePlaying;
+							recovering = true;
 							audio.src = fresh.url;
-							if (wasPlaying) audio.play().catch(function () {});
+							if (wasPlaying) {
+								audio.play().then(function () { recovering = false; }).catch(function () {
+									recovering = false;
+									stopPlaybackIntent();
+								});
+							} else {
+								recovering = false;
+							}
 						});
 					});
 					audio.addEventListener("timeupdate", function () {
@@ -404,6 +440,20 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					audio.addEventListener("loadedmetadata", function () {
 						if (durEl) durEl.textContent = fmt(audio.duration || 0);
 					});
+					if ("mediaSession" in navigator) {
+						try {
+							navigator.mediaSession.setActionHandler("play", function () {
+								shouldBePlaying = true;
+								audio.play().catch(function () {});
+							});
+							navigator.mediaSession.setActionHandler("pause", function () {
+								shouldBePlaying = false;
+								audio.pause();
+							});
+							navigator.mediaSession.setActionHandler("previoustrack", function () { playIndex(index - 1, true); });
+							navigator.mediaSession.setActionHandler("nexttrack", function () { playIndex(index + 1, true); });
+						} catch (e) {}
+					}
 				}
 				if (seek) {
 					seek.addEventListener("pointerdown", function () { seeking = true; });
@@ -831,7 +881,24 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				to { opacity: 1; transform: translateY(0) scale(1); }
 			}
 			@media (max-width: 640px) {
-				#qingge-music.qm { right: 0.75rem; bottom: 0.75rem; }
+				#qingge-music.qm {
+					right: -0.85rem;
+					bottom: max(0.75rem, env(safe-area-inset-bottom));
+					transition: right 200ms ease;
+				}
+				#qingge-music.qm.is-open { right: max(0.75rem, env(safe-area-inset-right)); }
+				.qm__fab {
+					width: 3.35rem;
+					height: 3.35rem;
+					opacity: 0.62;
+					transition: transform 200ms ease, opacity 200ms ease;
+				}
+				.qm.is-collapsed .qm__fab { transform: translateX(0.3rem); }
+				.qm.is-collapsed .qm__fab:hover,
+				.qm.is-collapsed .qm__fab:focus-visible {
+					opacity: 1;
+					transform: translateX(-0.15rem);
+				}
 			}
 			@media (prefers-reduced-motion: reduce) {
 				.qm__fab-disc, .qm__fab-ring, .qm__fab-eq i, .qm__eq i, .qm__orbit span {
