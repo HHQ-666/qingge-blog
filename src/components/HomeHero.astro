@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { funConfig, profileConfig, siteConfig } from "../config";
+import { authorGate, funConfig, profileConfig, siteConfig } from "../config";
 import { url } from "../utils/url-utils";
 import ImageWrapper from "./misc/ImageWrapper.astro";
 
@@ -35,9 +35,18 @@ const quoteEnabled = Boolean(funConfig.hitokoto);
 					class="w-full h-full"
 				/>
 			</a>
-			<div class="home-hero__icon hidden lg:flex shrink-0 h-12 w-12 items-center justify-center rounded-2xl">
+			{/* PC：小屋图标连点 5 次进入写作台（仅作者自用） */}
+			<button
+				type="button"
+				id="home-hero-cottage"
+				class="home-hero__icon hidden lg:flex shrink-0 h-12 w-12 items-center justify-center rounded-2xl border-0 p-0"
+				title="清哥的小屋"
+				aria-label="清哥的小屋"
+				data-admin-path={url(authorGate.adminPath)}
+				data-author-secret={authorGate.secret}
+			>
 				<Icon name="material-symbols:cottage-rounded" class="text-[1.75rem] text-[var(--primary)]" />
-			</div>
+			</button>
 
 			<div class="min-w-0 flex-1">
 				<p class="mb-0.5 sm:mb-1 text-xs sm:text-sm font-medium tracking-wide text-[var(--primary)]">
@@ -242,6 +251,41 @@ const quoteEnabled = Boolean(funConfig.hitokoto);
 		</script>
 	)
 }
+
+
+<script is:inline>
+(function () {
+	var KEY = "qingge-author";
+	function bootCottage() {
+		var btn = document.getElementById("home-hero-cottage");
+		if (!btn || btn.dataset.bound === "1") return;
+		btn.dataset.bound = "1";
+		var secret = btn.getAttribute("data-author-secret") || "";
+		var adminPath = btn.getAttribute("data-admin-path") || "/admin/";
+		var taps = 0;
+		var timer = 0;
+		btn.addEventListener("click", function () {
+			taps += 1;
+			if (timer) clearTimeout(timer);
+			timer = window.setTimeout(function () { taps = 0; }, 1000);
+			if (taps >= 5) {
+				taps = 0;
+				try { localStorage.setItem(KEY, secret); } catch (e) {}
+				document.dispatchEvent(new CustomEvent("author:unlocked"));
+				// 新窗口进入写作台，保留当前浏览
+				var win = window.open(adminPath, "_blank", "noopener,noreferrer");
+				if (!win) window.location.href = adminPath;
+			}
+		});
+	}
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", bootCottage);
+	} else {
+		bootCottage();
+	}
+	document.addEventListener("swup:page:view", bootCottage);
+})();
+</script>
 
 <style>
 	.home-hero__avatar {

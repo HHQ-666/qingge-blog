@@ -131,6 +131,21 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	theme: "github-light",
 };
 
+
+/**
+ * 作者写作台入口（仅自己可见）
+ * - 浏览器控制台执行：localStorage.setItem("qingge-author","你的口令") 后刷新
+ * - 或在欢迎区小屋图标上连点 5 次解锁
+ * - 解锁后仅显示顶部写作图标（新窗口打开）
+ * 真正写权限仍靠 GitHub，口令只控制入口显示
+ */
+export const authorGate = {
+	/** 与 localStorage 中 qingge-author 比对；改成你自己的口令 */
+	secret: "qingge-write",
+	/** 写作台路径 */
+	adminPath: "/admin/",
+};
+
 /**
  * Twikoo 评论（无需 GitHub 登录，昵称+邮箱即可）
  * 1. 按 docs/DEPLOY.md「Twikoo」一节部署云函数，拿到 envId
