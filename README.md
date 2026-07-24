@@ -1,99 +1,163 @@
-# 🍥Fuwari  
-![Node.js >= 20](https://img.shields.io/badge/node.js-%3E%3D20-brightgreen) 
-![pnpm >= 9](https://img.shields.io/badge/pnpm-%3E%3D9-blue) 
-[![DeepWiki](https://img.shields.io/badge/DeepWiki-saicaca%2Ffuwari-blue.svg?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACwAAAAyCAYAAAAnWDnqAAAAAXNSR0IArs4c6QAAA05JREFUaEPtmUtyEzEQhtWTQyQLHNak2AB7ZnyXZMEjXMGeK/AIi+QuHrMnbChYY7MIh8g01fJoopFb0uhhEqqcbWTp06/uv1saEDv4O3n3dV60RfP947Mm9/SQc0ICFQgzfc4CYZoTPAswgSJCCUJUnAAoRHOAUOcATwbmVLWdGoH//PB8mnKqScAhsD0kYP3j/Yt5LPQe2KvcXmGvRHcDnpxfL2zOYJ1mFwrryWTz0advv1Ut4CJgf5uhDuDj5eUcAUoahrdY/56ebRWeraTjMt/00Sh3UDtjgHtQNHwcRGOC98BJEAEymycmYcWwOprTgcB6VZ5JK5TAJ+fXGLBm3FDAmn6oPPjR4rKCAoJCal2eAiQp2x0vxTPB3ALO2CRkwmDy5WohzBDwSEFKRwPbknEggCPB/imwrycgxX2NzoMCHhPkDwqYMr9tRcP5qNrMZHkVnOjRMWwLCcr8ohBVb1OMjxLwGCvjTikrsBOiA6fNyCrm8V1rP93iVPpwaE+gO0SsWmPiXB+jikdf6SizrT5qKasx5j8ABbHpFTx+vFXp9EnYQmLx02h1QTTrl6eDqxLnGjporxl3NL3agEvXdT0WmEost648sQOYAeJS9Q7bfUVoMGnjo4AZdUMQku50McDcMWcBPvr0SzbTAFDfvJqwLzgxwATnCgnp4wDl6Aa+Ax283gghmj+vj7feE2KBBRMW3FzOpLOADl0Isb5587h/U4gGvkt5v60Z1VLG8BhYjbzRwyQZemwAd6cCR5/XFWLYZRIMpX39AR0tjaGGiGzLVyhse5C9RKC6ai42ppWPKiBagOvaYk8lO7DajerabOZP46Lby5wKjw1HCRx7p9sVMOWGzb/vA1hwiWc6jm3MvQDTogQkiqIhJV0nBQBTU+3okKCFDy9WwferkHjtxib7t3xIUQtHxnIwtx4mpg26/HfwVNVDb4oI9RHmx5WGelRVlrtiw43zboCLaxv46AZeB3IlTkwouebTr1y2NjSpHz68WNFjHvupy3q8TFn3Hos2IAk4Ju5dCo8B3wP7VPr/FGaKiG+T+v+TQqIrOqMTL1VdWV1DdmcbO8KXBz6esmYWYKPwDL5b5FA1a0hwapHiom0r/cKaoqr+27/XcrS5UwSMbQAAAABJRU5ErkJggg==)](https://deepwiki.com/saicaca/fuwari)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsaicaca%2Ffuwari.svg?type=shield&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsaicaca%2Ffuwari?ref=badge_shield&issueType=license)
+# 清哥的小屋
 
-A static blog template built with [Astro](https://astro.build).
+![Node.js >= 20](https://img.shields.io/badge/node.js-%3E%3D20-brightgreen)
+![pnpm >= 9](https://img.shields.io/badge/pnpm-%3E%3D9-blue)
+![Astro](https://img.shields.io/badge/Astro-5-orange)
 
-[**🖥️ Live Demo (Vercel)**](https://fuwari.vercel.app)
+个人静态博客 · 一个菜鸟的成长之路。
 
-![Preview Image](https://raw.githubusercontent.com/saicaca/resource/main/fuwari/home.png)
+基于 [Fuwari](https://github.com/saicaca/fuwari)（Astro）深度定制。
 
-🌏 README in
-[**中文**](https://github.com/saicaca/fuwari/blob/main/docs/README.zh-CN.md) /
-[**日本語**](https://github.com/saicaca/fuwari/blob/main/docs/README.ja.md) /
-[**한국어**](https://github.com/saicaca/fuwari/blob/main/docs/README.ko.md) /
-[**Español**](https://github.com/saicaca/fuwari/blob/main/docs/README.es.md) /
-[**ไทย**](https://github.com/saicaca/fuwari/blob/main/docs/README.th.md) /
-[**Tiếng Việt**](https://github.com/saicaca/fuwari/blob/main/docs/README.vi.md) /
-[**Bahasa Indonesia**](https://github.com/saicaca/fuwari/blob/main/docs/README.id.md) (Provided by the community and may not always be up-to-date)
+**线上地址：** [https://blog.hhq688.com/](https://blog.hhq688.com/)  
+**仓库：** [HHQ-666/qingge-blog](https://github.com/HHQ-666/qingge-blog)
 
-## ✨ Features
+---
 
-- [x] Built with [Astro](https://astro.build) and [Tailwind CSS](https://tailwindcss.com)
-- [x] Smooth animations and page transitions
-- [x] Light / dark mode
-- [x] Customizable theme colors & banner
-- [x] Responsive design
-- [x] Search functionality with [Pagefind](https://pagefind.app/)
-- [x] [Markdown extended features](https://github.com/saicaca/fuwari?tab=readme-ov-file#-markdown-extended-syntax)
-- [x] Table of contents
-- [x] RSS feed
+## ✨ 功能特性
 
-## 🚀 Getting Started
+### 基础（继承自 Fuwari）
 
-1. Create your blog repository:
-    - [Generate a new repository](https://github.com/saicaca/fuwari/generate) from this template or fork this repository.
-    - Or run one of the following commands:
-       ```sh
-       npm create fuwari@latest
-       yarn create fuwari
-       pnpm create fuwari@latest
-       bun create fuwari@latest
-       deno run -A npm:create-fuwari@latest
-       ```
-2. To edit your blog locally, clone your repository, run `pnpm install` to install dependencies.
-    - Install [pnpm](https://pnpm.io) `npm install -g pnpm` if you haven't.
-3. Edit the config file `src/config.ts` to customize your blog.
-4. Run `pnpm new-post <filename>` to create a new post and edit it in `src/content/posts/`.
-5. Deploy your blog to Vercel, Netlify, GitHub Pages, etc. following [the guides](https://docs.astro.build/en/guides/deploy/). You need to edit the site configuration in `astro.config.mjs` before deployment.
+- [x] Astro 5 + Tailwind CSS
+- [x] 流畅动画与 Swup 页面过渡
+- [x] 亮色 / 暗色模式 + 可调主题色
+- [x] 响应式布局
+- [x] Pagefind 全文搜索
+- [x] 文章目录 / RSS / Sitemap
+- [x] Markdown 扩展语法（警告框、代码块等）
 
-## 📝 Frontmatter of Posts
+### 本站扩展
+
+- [x] **动态大海 Banner**（视频 + 静态海报首屏占位，避免移动端空白）
+- [x] **华语金曲电台**（FAB 圆盘 + 完整面板 + **精简模式**迷你条，跟随主题色）
+- [x] **Twikoo 评论**（昵称 + 邮箱即可，无需 GitHub 登录）
+- [x] **今日一言**：移动端并入欢迎卡（打字机短句）；PC 侧栏独立卡片
+- [x] 移动端分类 / 标签流式展开（单行折叠 + 更多）
+- [x] 不蒜子访问统计、站点运行天数、开场 Splash、阅读进度条等
+
+---
+
+## 🛠️ 技术栈
+
+| 类别 | 技术 |
+|------|------|
+| 框架 | [Astro](https://astro.build) 5 |
+| 样式 | Tailwind CSS / Stylus |
+| 交互 | Svelte 5 / Swup |
+| 搜索 | Pagefind |
+| 评论 | [Twikoo](https://twikoo.js.org/)（Netlify Functions + MongoDB Atlas） |
+| 部署 | Vercel（生产）· 域名 `blog.hhq688.com` |
+
+---
+
+## 🚀 本地开发
+
+```bash
+# 要求：Node.js >= 20，pnpm >= 9
+pnpm install
+pnpm dev          # http://localhost:4321
+pnpm build        # 构建 + pagefind 索引 → ./dist
+pnpm preview      # 预览构建结果
+pnpm check        # Astro 诊断
+pnpm new-post <filename>  # 新建文章
+```
+
+主要配置文件：[`src/config.ts`](src/config.ts)  
+部署说明：[`docs/DEPLOY.md`](docs/DEPLOY.md)
+
+---
+
+## 📝 文章 Frontmatter
 
 ```yaml
 ---
-title: My First Blog Post
-published: 2023-09-09
-description: This is the first post of my new Astro blog.
+title: 我的第一篇文章
+published: 2026-07-21
+description: 简介
 image: ./cover.jpg
-tags: [Foo, Bar]
-category: Front-end
+tags: [前端, 笔记]
+category: 前端
 draft: false
-lang: jp      # Set only if the post's language differs from the site's language in `config.ts`
 ---
 ```
 
-## 🧩 Markdown Extended Syntax
+文章放在 `src/content/posts/`。
 
-In addition to Astro's default support for [GitHub Flavored Markdown](https://github.github.com/gfm/), several extra Markdown features are included:
+---
 
-- Admonitions ([Preview and Usage](https://fuwari.vercel.app/posts/markdown-extended/#admonitions))
-- GitHub repository cards ([Preview and Usage](https://fuwari.vercel.app/posts/markdown-extended/#github-repository-cards))
-- Enhanced code blocks with Expressive Code ([Preview](https://fuwari.vercel.app/posts/expressive-code/) / [Docs](https://expressive-code.com/))
+## ⚙️ 功能开关速查
 
-## ⚡ Commands
+均在 `src/config.ts`：
 
-All commands are run from the root of the project, from a terminal:
+| 功能 | 配置项 |
+|------|--------|
+| 站点信息 / Banner 视频 | `siteConfig` |
+| 个人资料 | `profileConfig` |
+| 全屏开场图 | `funConfig.splash` |
+| 华语金曲电台 | `funConfig.musicPlayer` |
+| 今日一言 | `funConfig.hitokoto` |
+| 不蒜子统计 | `funConfig.busuanzi` |
+| 站点天数 | `funConfig.siteDays` |
+| **Twikoo 评论** | `twikooConfig` |
+| Giscus（备用，默认关） | `giscusConfig` |
 
-| Command                    | Action                                              |
-|:---------------------------|:----------------------------------------------------|
-| `pnpm install`             | Installs dependencies                               |
-| `pnpm dev`                 | Starts local dev server at `localhost:4321`         |
-| `pnpm build`               | Build your production site to `./dist/`             |
-| `pnpm preview`             | Preview your build locally, before deploying        |
-| `pnpm check`               | Run checks for errors in your code                  |
-| `pnpm format`              | Format your code using Biome                        |
-| `pnpm new-post <filename>` | Create a new post                                   |
-| `pnpm astro ...`           | Run CLI commands like `astro add`, `astro check`    |
-| `pnpm astro --help`        | Get help using the Astro CLI                        |
+---
 
-## ✏️ Contributing
+## 💬 评论（Twikoo）
 
-Check out the [Contributing Guide](https://github.com/saicaca/fuwari/blob/main/CONTRIBUTING.md) for details on how to contribute to this project.
+当前使用 **Twikoo**，访客无需 GitHub 账号。
+
+- 云函数：Netlify（`twikoo-netlify`）
+- 数据库：MongoDB Atlas
+- 配置：`twikooConfig.envId` 填云函数完整地址，例如：
+
+```ts
+export const twikooConfig = {
+  enable: true,
+  envId: "https://xxx.netlify.app/.netlify/functions/twikoo",
+  region: "",
+  path: "pathname",
+};
+```
+
+部署步骤见 [docs/DEPLOY.md · Twikoo](docs/DEPLOY.md#二twikoo-评论推荐无需-github-登录)。
+
+---
+
+## 🎵 电台
+
+右下角圆盘打开完整歌单面板；面板内可切 **精简模式**（半透明迷你条，跟随主题色）。  
+配置见 `funConfig.musicPlayer`（音源依赖第三方 Meting 代理，可能失效）。
+
+---
+
+## 📂 目录结构（节选）
+
+```text
+src/
+  components/
+    BannerMedia.astro      # Banner 视频 + 海报
+    HomeHero.astro         # 欢迎区（移动端一言）
+    Comment.astro          # Twikoo / Giscus
+    fun/MusicPlayer.astro  # 电台（完整 + 精简）
+    widget/                # 侧栏、移动端导航等
+  config.ts                # 站点与功能配置
+  content/posts/           # 文章
+docs/
+  DEPLOY.md                # 部署与评论配置
+  README.zh-CN.md          # 中文说明
+```
+
+---
+
+## 🔗 相关链接
+
+- 生产站：https://blog.hhq688.com/
+- 上游模板：[saicaca/fuwari](https://github.com/saicaca/fuwari)
+- Twikoo：https://twikoo.js.org/
+
+---
 
 ## 📄 License
 
-This project is licensed under the MIT License.
-
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fsaicaca%2Ffuwari.svg?type=large&issueType=license)](https://app.fossa.com/projects/git%2Bgithub.com%2Fsaicaca%2Ffuwari?ref=badge_large&issueType=license)
+基于 Fuwari 修改，原项目采用 MIT License。  
+本仓库内容与文章版权归作者清阿哥所有。

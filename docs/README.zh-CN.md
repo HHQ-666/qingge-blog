@@ -1,86 +1,118 @@
-# 🍥Fuwari
+# 清哥的小屋
 
-基于 [Astro](https://astro.build) 开发的静态博客模板。
+基于 [Astro](https://astro.build) 的个人静态博客，在 [Fuwari](https://github.com/saicaca/fuwari) 模板上深度定制。
 
-[**🖥️在线预览（Vercel）**](https://fuwari.vercel.app)
+**线上预览：** [https://blog.hhq688.com/](https://blog.hhq688.com/)  
+**仓库：** [HHQ-666/qingge-blog](https://github.com/HHQ-666/qingge-blog)
 
-![Preview Image](https://raw.githubusercontent.com/saicaca/resource/main/fuwari/home.png)
+副标题：一个菜鸟的成长之路。
+
+---
 
 ## ✨ 功能特性
 
-- [x] 基于 Astro 和 Tailwind CSS 开发
-- [x] 流畅的动画和页面过渡
+### 模板自带
+
+- [x] Astro + Tailwind CSS
+- [x] 流畅动画与页面过渡
 - [x] 亮色 / 暗色模式
-- [x] 自定义主题色和横幅图片
+- [x] 自定义主题色与 Banner
 - [x] 响应式设计
-- [ ] 评论
-- [x] 搜索
-- [x] 文内目录
+- [x] Pagefind 搜索
+- [x] 文内目录 / RSS
 
-## 👀 要求
+### 本站增强
 
-- Node.js <= 22
-- pnpm <= 9
+- [x] 动态大海 Banner（静态海报首屏占位，视频就绪后淡入）
+- [x] 华语金曲电台：圆盘 FAB + 完整面板 + **精简模式**
+- [x] **Twikoo 评论**（无需 GitHub 登录）
+- [x] 移动端欢迎卡内嵌今日一言（打字机短句）
+- [x] 移动端分类 / 标签单行折叠展开
+- [x] 不蒜子统计、站点天数、开场图、阅读进度等
 
-## 🚀 使用方法 1
+---
 
-使用 [create-fuwari](https://github.com/L4Ph/create-fuwari) 在本地初始化项目。
+## 👀 环境要求
 
-```sh
-# npm
-npm create fuwari@latest
+- Node.js >= 20
+- pnpm >= 9
 
-# yarn
-yarn create fuwari
+---
 
-# pnpm
-pnpm create fuwari@latest
+## 🚀 本地开发
 
-# bun
-bun create fuwari@latest
-
-# deno
-deno run -A npm:create-fuwari@latest
+```bash
+pnpm install
+pnpm dev      # http://localhost:4321
+pnpm build    # 输出到 ./dist，并生成 pagefind 索引
+pnpm preview  # 预览构建结果
+pnpm check    # 诊断
+pnpm new-post <filename>
 ```
 
-1. 通过配置文件 `src/config.ts` 自定义博客
-2. 执行 `pnpm new-post <filename>` 创建新文章，并在 `src/content/posts/` 目录中编辑
-3. 参考[官方指南](https://docs.astro.build/zh-cn/guides/deploy/)将博客部署至 Vercel, Netlify, GitHub Pages 等；部署前需编辑 `astro.config.mjs` 中的站点设置。
+1. 在 [`src/config.ts`](../src/config.ts) 修改站点信息与功能开关  
+2. 文章目录：`src/content/posts/`  
+3. 部署说明：[`DEPLOY.md`](./DEPLOY.md)
 
-## 🚀 使用方法 2
-
-1. 使用此模板[生成新仓库](https://github.com/saicaca/fuwari/generate)或 Fork 此仓库
-2. 进行本地开发，Clone 新的仓库，执行 `pnpm install` 和 `pnpm add sharp` 以安装依赖  
-   - 若未安装 [pnpm](https://pnpm.io)，执行 `npm install -g pnpm`
-3. 通过配置文件 `src/config.ts` 自定义博客
-4. 执行 `pnpm new-post <filename>` 创建新文章，并在 `src/content/posts/` 目录中编辑
-5. 参考[官方指南](https://docs.astro.build/zh-cn/guides/deploy/)将博客部署至 Vercel, Netlify, GitHub Pages 等；部署前需编辑 `astro.config.mjs` 中的站点设置。
+---
 
 ## ⚙️ 文章 Frontmatter
 
 ```yaml
 ---
-title: My First Blog Post
-published: 2023-09-09
-description: This is the first post of my new Astro blog.
+title: 文章标题
+published: 2026-07-21
+description: 简介
 image: ./cover.jpg
-tags: [Foo, Bar]
-category: Front-end
+tags: [前端, 笔记]
+category: 前端
 draft: false
-lang: jp      # 仅当文章语言与 `config.ts` 中的网站语言不同时需要设置
+lang: zh_CN   # 仅当与站点语言不同时需要
 ---
 ```
 
-## 🧞 指令
+---
 
-下列指令均需要在项目根目录执行：
+## 💬 评论
 
-| Command                           | Action                            |
-|:----------------------------------|:----------------------------------|
-| `pnpm install` 并 `pnpm add sharp` | 安装依赖                              |
-| `pnpm dev`                        | 在 `localhost:4321` 启动本地开发服务器      |
-| `pnpm build`                      | 构建网站至 `./dist/`                   |
-| `pnpm preview`                    | 本地预览已构建的网站                        |
-| `pnpm new-post <filename>`        | 创建新文章                             |
-| `pnpm astro ...`                  | 执行 `astro add`, `astro check` 等指令 |
-| `pnpm astro --help`               | 显示 Astro CLI 帮助                   |
+默认使用 **Twikoo**（昵称 + 邮箱即可评论）。
+
+| 项 | 说明 |
+|----|------|
+| 配置 | `src/config.ts` → `twikooConfig` |
+| 云函数 | Netlify 部署 `twikoo-netlify` |
+| 数据库 | MongoDB Atlas |
+| envId 示例 | `https://xxx.netlify.app/.netlify/functions/twikoo` |
+
+详细步骤见 [DEPLOY.md · Twikoo](./DEPLOY.md#二twikoo-评论推荐无需-github-登录)。
+
+旧版 Giscus 配置仍保留在 `giscusConfig`（默认关闭），可按需切回。
+
+---
+
+## 🎵 电台与 Banner
+
+| 功能 | 配置 | 说明 |
+|------|------|------|
+| Banner 视频 | `siteConfig.banner` | `src` 静态图 + `video` + `posterPublic` |
+| 电台 | `funConfig.musicPlayer` | 完整面板内可切「精简模式」 |
+
+---
+
+## 🧞 常用指令
+
+| 命令 | 作用 |
+|------|------|
+| `pnpm install` | 安装依赖 |
+| `pnpm dev` | 本地开发服务器 |
+| `pnpm build` | 生产构建 + 搜索索引 |
+| `pnpm preview` | 预览构建结果 |
+| `pnpm new-post <name>` | 新建文章 |
+| `pnpm check` | Astro / 类型检查 |
+
+---
+
+## 📄 许可
+
+上游模板 Fuwari 为 MIT License。  
+本站文章与定制内容版权归作者所有。

@@ -1,20 +1,21 @@
 ---
 import { Icon } from "astro-icon/components";
-import { profileConfig, siteConfig } from "../config";
+import { funConfig, profileConfig, siteConfig } from "../config";
 import { url } from "../utils/url-utils";
 import ImageWrapper from "./misc/ImageWrapper.astro";
 
 const welcome = `欢迎来到${siteConfig.title}`;
 const subtitle = siteConfig.subtitle;
 const name = profileConfig.name;
-const bio = profileConfig.bio;
 const avatar = profileConfig.avatar || "";
+const quoteEnabled = Boolean(funConfig.hitokoto);
 ---
 
 <section
 	class="card-base relative overflow-hidden rounded-[var(--radius-large)] mb-4 onload-animation home-hero"
 	style="animation-delay: calc(var(--content-delay) + 0ms);"
 	aria-label="欢迎区"
+	data-quote-enabled={quoteEnabled ? "1" : "0"}
 >
 	<!-- soft warm glow -->
 	<div class="home-hero__glow pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full opacity-60 blur-3xl"></div>
@@ -45,12 +46,31 @@ const avatar = profileConfig.avatar || "";
 				<h1 class="text-lg sm:text-2xl md:text-3xl font-bold text-90 leading-snug">
 					{welcome}
 				</h1>
-				<p class="mt-1 sm:mt-2 text-75 leading-relaxed max-w-2xl text-[0.86rem] sm:text-base">
-					<span class="sm:hidden">{bio}</span>
-					<span class="hidden sm:inline">
-						{subtitle}。这里放着前端踩坑笔记、面试整理与日常思考——先看看湖光山色，再推门进来坐坐。
-					</span>
+				{/* PC：正常副标题；移动端：短句今日一言（无书名号、单行+刷新） */}
+				<p class="mt-1 sm:mt-2 text-75 leading-relaxed max-w-2xl text-[0.86rem] sm:text-base hidden sm:block">
+					{subtitle}。这里放一些前端学习踩坑笔记、日常思考、还有一些个人碎碎念吧
 				</p>
+				{
+					quoteEnabled ? (
+						<p class="home-hero__quote mt-1.5 text-75 sm:hidden">
+							<span id="home-hero-quote" class="home-hero__quote-text">加载中…</span>
+							<span id="home-hero-quote-from" class="home-hero__quote-from"></span>
+							<button
+								type="button"
+								id="home-hero-quote-refresh"
+								class="home-hero__quote-refresh btn-plain rounded-md active:scale-90"
+								title="换一句"
+								aria-label="换一句"
+							>
+								<Icon name="material-symbols:refresh-rounded" class="text-[0.9rem]" />
+							</button>
+						</p>
+					) : (
+						<p class="mt-1 text-75 leading-relaxed text-[0.86rem] sm:hidden">
+							欢迎来到清哥的小屋 · 记录成长与思考
+						</p>
+					)
+				}
 			</div>
 		</div>
 
@@ -86,6 +106,142 @@ const avatar = profileConfig.avatar || "";
 		</div>
 	</div>
 </section>
+
+{
+	quoteEnabled && (
+		<script is:inline>
+			(function () {
+				// 本地短句池：偏短，保证移动端单行
+				var LOCAL_QUOTES = [
+					{ t: "千里之行，始于足下。", f: "老子" },
+					{ t: "不积跬步，无以至千里。", f: "荀子" },
+					{ t: "业精于勤，荒于嬉。", f: "韩愈" },
+					{ t: "博观而约取，厚积而薄发。", f: "苏轼" },
+					{ t: "工欲善其事，必先利其器。", f: "孔子" },
+					{ t: "读万卷书，行万里路。", f: "董其昌" },
+					{ t: "志当存高远。", f: "诸葛亮" },
+					{ t: "静以修身，俭以养德。", f: "诸葛亮" },
+					{ t: "有志者事竟成。", f: "后汉书" },
+					{ t: "一寸光阴一寸金。", f: "王贞白" },
+					{ t: "天行健，君子以自强不息。", f: "周易" },
+					{ t: "厚德载物。", f: "周易" },
+					{ t: "采菊东篱下，悠然见南山。", f: "陶渊明" },
+					{ t: "海内存知己，天涯若比邻。", f: "王勃" },
+					{ t: "行到水穷处，坐看云起时。", f: "王维" },
+					{ t: "但愿人长久，千里共婵娟。", f: "苏轼" },
+					{ t: "会当凌绝顶，一览众山小。", f: "杜甫" },
+					{ t: "落红不是无情物，化作春泥更护花。", f: "龚自珍" },
+					{ t: "纸上得来终觉浅，绝知此事要躬行。", f: "陆游" },
+					{ t: "问渠那得清如许，为有源头活水来。", f: "朱熹" },
+				];
+
+				var MAX_LEN = 18;
+				var typingTimer = 0;
+				var lastIdx = -1;
+
+				function pickLocal() {
+					var short = LOCAL_QUOTES.filter(function (q) { return q.t.length <= MAX_LEN; });
+					var pool = short.length ? short : LOCAL_QUOTES;
+					var i = Math.floor(Math.random() * pool.length);
+					if (i === lastIdx && pool.length > 1) {
+						i = (i + 1) % pool.length;
+					}
+					lastIdx = i;
+					return pool[i];
+				}
+
+				function reduceMotion() {
+					return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+				}
+
+				function typeText(el, full, done) {
+					if (typingTimer) {
+						clearInterval(typingTimer);
+						typingTimer = 0;
+					}
+					if (!el) {
+						if (done) done();
+						return;
+					}
+					if (reduceMotion()) {
+						el.textContent = full;
+						if (done) done();
+						return;
+					}
+					el.textContent = "";
+					var i = 0;
+					typingTimer = window.setInterval(function () {
+						i += 1;
+						el.textContent = full.slice(0, i);
+						if (i >= full.length) {
+							clearInterval(typingTimer);
+							typingTimer = 0;
+							if (done) done();
+						}
+					}, 42);
+				}
+
+				function applyQuote(text, from) {
+					var textEl = document.getElementById("home-hero-quote");
+					var fromEl = document.getElementById("home-hero-quote-from");
+					if (!textEl || !fromEl) return;
+					var t = String(text || "").trim();
+					if (t.length > MAX_LEN) t = t.slice(0, MAX_LEN - 1) + "…";
+					fromEl.textContent = "";
+					typeText(textEl, t, function () {
+						fromEl.textContent = "· " + (from || "佚名");
+					});
+				}
+
+				async function loadQuote() {
+					var useNet = Math.random() < 0.22;
+					if (useNet) {
+						try {
+							var controller = new AbortController();
+							var timeout = window.setTimeout(function () { controller.abort(); }, 2800);
+							var res = await fetch("https://v1.hitokoto.cn/?c=i&c=k&c=d&encode=json", {
+								signal: controller.signal,
+							});
+							window.clearTimeout(timeout);
+							if (res.ok) {
+								var data = await res.json();
+								var hit = String(data.hitokoto || "").trim();
+								if (hit && hit.length <= MAX_LEN + 2) {
+									applyQuote(hit, data.from_who || data.from || "佚名");
+									return;
+								}
+							}
+						} catch (_) {}
+					}
+					var q = pickLocal();
+					applyQuote(q.t, q.f);
+				}
+
+				function bind() {
+					var root = document.querySelector(".home-hero[data-quote-enabled='1']");
+					if (!root) return;
+					// 仅移动端渲染 quote 节点时才启动
+					if (!document.getElementById("home-hero-quote")) return;
+					if (root.dataset.quoteBooted === "1") {
+						loadQuote();
+						return;
+					}
+					root.dataset.quoteBooted = "1";
+					loadQuote();
+					var btn = document.getElementById("home-hero-quote-refresh");
+					if (btn) btn.addEventListener("click", loadQuote);
+				}
+
+				if (document.readyState === "loading") {
+					document.addEventListener("DOMContentLoaded", bind);
+				} else {
+					bind();
+				}
+				document.addEventListener("swup:page:view", bind);
+			})();
+		</script>
+	)
+}
 
 <style>
 	.home-hero__avatar {
@@ -128,5 +284,62 @@ const avatar = profileConfig.avatar || "";
 		box-shadow:
 			0 1px 0 rgba(255, 255, 255, 0.04),
 			0 16px 40px -22px rgba(0, 0, 0, 0.45);
+	}
+
+	/* 移动端今日一言：单行紧凑，刷新不换行；无书名号 */
+	.home-hero__quote {
+		display: flex;
+		flex-wrap: nowrap;
+		align-items: center;
+		gap: 0.2rem;
+		min-width: 0;
+		font-size: 0.74rem;
+		line-height: 1.35;
+		min-height: 1.35em;
+	}
+	.home-hero__quote-text {
+		flex: 0 1 auto;
+		min-width: 0;
+		max-width: calc(100% - 4.2rem);
+		color: oklch(0.42 0.03 var(--hue));
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		border-right: 1.5px solid oklch(0.62 0.1 var(--hue) / 0.55);
+		padding-right: 1px;
+		animation: home-hero-caret 0.9s steps(1) infinite;
+	}
+	:global(.dark) .home-hero__quote-text {
+		color: oklch(0.86 0.02 var(--hue));
+	}
+	.home-hero__quote-from {
+		flex-shrink: 0;
+		font-size: 0.7em;
+		opacity: 0.55;
+		white-space: nowrap;
+		max-width: 3rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.home-hero__quote-refresh {
+		width: 1.25rem;
+		height: 1.25rem;
+		padding: 0;
+		margin-left: 0.05rem;
+		color: var(--primary);
+		opacity: 0.8;
+		flex-shrink: 0;
+	}
+	.home-hero__quote-refresh:hover {
+		opacity: 1;
+	}
+	@keyframes home-hero-caret {
+		50% { border-right-color: transparent; }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.home-hero__quote-text {
+			animation: none;
+			border-right: 0;
+		}
 	}
 </style>

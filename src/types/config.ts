@@ -31,8 +31,13 @@ export type SiteConfig = {
 		video?: {
 			enable: boolean;
 			src: string;
-			/** 视频首帧 / 失败兜底图 */
+			/** 静态层 / 失败兜底图（src 下 assets，经 Astro 优化） */
 			poster?: string;
+			/**
+			 * 原生 <video poster> 用的 public 路径（如 /media/xxx-poster.jpg）
+			 * 首屏立刻有图，不依赖 JS / 哈希资源
+			 */
+			posterPublic?: string;
 		};
 		position?: "top" | "center" | "bottom";
 		credit: {

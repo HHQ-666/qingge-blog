@@ -5,10 +5,73 @@ const enabled = funConfig.busuanzi;
 
 {
 	enabled && (
-		<script
-			is:inline
-			async
-			src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"
-		/>
+		<script is:inline>
+			(function () {
+				/** 不蒜子 JSONP：填充所有 [data-busuanzi] 节点（避免重复 id 导致只填一处） */
+				var cache = null;
+
+				function fill(uv, pv) {
+					document.querySelectorAll('[data-busuanzi="site_uv"]').forEach(function (el) {
+						el.textContent = uv != null && uv !== "" ? String(uv) : "-";
+					});
+					document.querySelectorAll('[data-busuanzi="site_pv"]').forEach(function (el) {
+						el.textContent = pv != null && pv !== "" ? String(pv) : "-";
+					});
+				}
+
+				function applyCache() {
+					if (cache) fill(cache.site_uv, cache.site_pv);
+				}
+
+				function load(force) {
+					if (cache && !force) {
+						applyCache();
+						return;
+					}
+					var cbName = "BusuanziCallback_" + Math.floor(Math.random() * 1e8);
+					var finished = false;
+					window[cbName] = function (data) {
+						finished = true;
+						try {
+							if (data) {
+								cache = { site_uv: data.site_uv, site_pv: data.site_pv };
+								fill(data.site_uv, data.site_pv);
+							}
+						} catch (e) {}
+						cleanup();
+					};
+					function cleanup() {
+						try { delete window[cbName]; } catch (e) { window[cbName] = undefined; }
+						if (script && script.parentNode) script.parentNode.removeChild(script);
+					}
+					var script = document.createElement("script");
+					script.async = true;
+					script.src =
+						"https://busuanzi.ibruce.info/busuanzi?jsonpCallback=" +
+						cbName +
+						"&_=" +
+						Date.now();
+					script.onerror = function () {
+						if (!finished) applyCache();
+						cleanup();
+					};
+					setTimeout(function () {
+						if (!finished) cleanup();
+					}, 7000);
+					document.head.appendChild(script);
+				}
+
+				if (document.readyState === "loading") {
+					document.addEventListener("DOMContentLoaded", function () { load(true); });
+				} else {
+					load(true);
+				}
+				// Swup 切页：节点重建，用缓存立刻回填
+				document.addEventListener("swup:page:view", function () {
+					if (cache) applyCache();
+					else load(true);
+				});
+			})();
+		</script>
 	)
 }

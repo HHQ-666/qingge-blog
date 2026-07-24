@@ -23,8 +23,10 @@ export const siteConfig: SiteConfig = {
 		video: {
 			enable: true,
 			src: "/media/banner-ocean.mp4",
-			// 视频首帧 / 加载失败兜底
+			// 静态层兜底（Astro 优化图）
 			poster: "assets/images/banner-ocean-poster.jpg",
+			// 原生 video poster：public 路径，首屏立刻显示
+			posterPublic: "/media/banner-ocean-poster.jpg",
 		},
 		position: "center",
 		credit: {
@@ -130,25 +132,40 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 };
 
 /**
- * Giscus 评论（基于 GitHub Discussions）
- * 启用前请按 docs/DEPLOY.md 完成仓库 Discussions + giscus.app 配置，再填入下方字段。
- * 未配置完整 id 时文章页会显示评论引导卡片（不会加载 giscus 脚本）。
+ * Twikoo 评论（无需 GitHub 登录，昵称+邮箱即可）
+ * 1. 按 docs/DEPLOY.md「Twikoo」一节部署云函数，拿到 envId
+ * 2. 把 envId 填到下方（腾讯云环境 ID，或 Vercel 部署完整 URL）
+ * 3. enable: true 后重新构建部署
+ * 未配置 envId 时文章页会显示引导卡片。
+ */
+export const twikooConfig = {
+	enable: true,
+	/**
+	 * Netlify 部署的 Twikoo 云函数完整地址
+	 * 格式：https://你的站点.netlify.app/.netlify/functions/twikoo
+	 */
+	envId: "https://darling-axolotl-6d79b4.netlify.app/.netlify/functions/twikoo",
+	/** Netlify 部署留空即可 */
+	region: "",
+	/** 路径模式：pathname 按路径区分文章评论 */
+	path: "pathname" as const,
+};
+
+/**
+ * Giscus 评论（GitHub Discussions，需登录 GitHub）— 已改用 Twikoo
+ * 若仍想用 Giscus，可把 twikooConfig.enable 设为 false，再把这里 enable 设为 true。
  */
 export const giscusConfig = {
-	enable: true,
-	// 博客仓库（需在该仓库 Settings → Features 开启 Discussions）
+	enable: false,
 	repo: "HHQ-666/qingge-blog",
-	// 仓库的 GraphQL node id
 	repoId: "R_kgDOTey15Q",
 	category: "Announcements",
-	// Announcements 分类的 GraphQL node id
 	categoryId: "DIC_kwDOTey15c4DBx6i",
 	mapping: "pathname" as const,
 	strict: "0" as const,
 	reactionsEnabled: "1" as const,
 	emitMetadata: "0" as const,
 	inputPosition: "top" as const,
-	// 跟随站点亮暗色；也可固定 "light" | "dark"
 	theme: "preferred_color_scheme" as const,
 	lang: "zh-CN",
 	loading: "lazy" as const,

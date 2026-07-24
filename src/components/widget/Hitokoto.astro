@@ -8,14 +8,14 @@ const enabled = funConfig.hitokoto;
 {
 	enabled && (
 		<div class="card-base p-4 onload-animation hitokoto-card" style="animation-delay: 180ms">
-			<div class="flex items-center gap-2 mb-2.5 text-50">
+			<div class="flex items-center gap-2 mb-2 text-50">
 				<Icon name="material-symbols:format-quote-rounded" class="text-[1.15rem] text-[var(--primary)]" />
 				<span class="text-sm font-semibold tracking-wide">今日一言</span>
 			</div>
-			<blockquote id="hitokoto-text" class="text-75 text-sm leading-relaxed min-h-[2.75rem]">
+			<blockquote id="hitokoto-text" class="hitokoto-card__text text-75 text-sm leading-snug min-h-[1.4em]">
 				加载中…
 			</blockquote>
-			<div class="mt-2.5 flex items-center justify-between gap-2">
+			<div class="mt-2 flex items-center justify-between gap-2">
 				<p id="hitokoto-from" class="text-50 text-xs truncate">—</p>
 				<button
 					type="button"
@@ -33,32 +33,94 @@ const enabled = funConfig.hitokoto;
 
 {
 	enabled && (
-		<script>
-			async function loadHitokoto() {
-				const textEl = document.getElementById("hitokoto-text");
-				const fromEl = document.getElementById("hitokoto-from");
-				if (!textEl || !fromEl) return;
-				try {
-					const res = await fetch("https://v1.hitokoto.cn/?c=i&c=k&c=d&encode=json");
-					if (!res.ok) throw new Error("bad status");
-					const data = await res.json();
-					textEl.textContent = data.hitokoto || "愿你眼里有光，心中有爱。";
-					const from = data.from_who || data.from || "佚名";
-					fromEl.textContent = `— ${from}`;
-				} catch {
-					textEl.textContent = "愿你眼里有光，心中有爱。读过的书，走过的路，都算数。";
-					fromEl.textContent = "— 清哥的小屋";
+		<script is:inline>
+			(function () {
+				var LOCAL_QUOTES = [
+					{ t: "山重水复疑无路，柳暗花明又一村。", f: "陆游" },
+					{ t: "行到水穷处，坐看云起时。", f: "王维" },
+					{ t: "海内存知己，天涯若比邻。", f: "王勃" },
+					{ t: "长风破浪会有时，直挂云帆济沧海。", f: "李白" },
+					{ t: "落红不是无情物，化作春泥更护花。", f: "龚自珍" },
+					{ t: "不积跬步，无以至千里。", f: "荀子" },
+					{ t: "千里之行，始于足下。", f: "老子" },
+					{ t: "纸上得来终觉浅，绝知此事要躬行。", f: "陆游" },
+					{ t: "问渠那得清如许，为有源头活水来。", f: "朱熹" },
+					{ t: "路漫漫其修远兮，吾将上下而求索。", f: "屈原" },
+					{ t: "采菊东篱下，悠然见南山。", f: "陶渊明" },
+					{ t: "但愿人长久，千里共婵娟。", f: "苏轼" },
+					{ t: "会当凌绝顶，一览众山小。", f: "杜甫" },
+					{ t: "莫听穿林打叶声，何妨吟啸且徐行。", f: "苏轼" },
+					{ t: "春风又绿江南岸，明月何时照我还。", f: "王安石" },
+					{ t: "业精于勤，荒于嬉。", f: "韩愈" },
+					{ t: "博观而约取，厚积而薄发。", f: "苏轼" },
+					{ t: "知之者不如好之者，好之者不如乐之者。", f: "孔子" },
+					{ t: "工欲善其事，必先利其器。", f: "孔子" },
+					{ t: "读万卷书，行万里路。", f: "董其昌" },
+					{ t: "天行健，君子以自强不息。", f: "周易" },
+					{ t: "宝剑锋从磨砺出，梅花香自苦寒来。", f: "警世贤文" },
+					{ t: "一寸光阴一寸金。", f: "王贞白" },
+					{ t: "有志者事竟成。", f: "后汉书" },
+				];
+				var MAX_LEN = 32;
+				var lastIdx = -1;
+
+				function pickLocal() {
+					var i = Math.floor(Math.random() * LOCAL_QUOTES.length);
+					if (i === lastIdx && LOCAL_QUOTES.length > 1) i = (i + 1) % LOCAL_QUOTES.length;
+					lastIdx = i;
+					return LOCAL_QUOTES[i];
 				}
-			}
-			loadHitokoto();
-			const btn = document.getElementById("hitokoto-refresh");
-			if (btn) btn.addEventListener("click", loadHitokoto);
-			// Swup 页面切换后重新绑定
-			document.addEventListener("swup:page:view", () => {
+
+				async function loadHitokoto() {
+					var textEl = document.getElementById("hitokoto-text");
+					var fromEl = document.getElementById("hitokoto-from");
+					if (!textEl || !fromEl) return;
+
+					var useNet = Math.random() < 0.28;
+					if (useNet) {
+						try {
+							var controller = new AbortController();
+							var timeout = window.setTimeout(function () { controller.abort(); }, 2800);
+							var res = await fetch("https://v1.hitokoto.cn/?c=i&c=k&c=d&encode=json", {
+								signal: controller.signal,
+							});
+							window.clearTimeout(timeout);
+							if (res.ok) {
+								var data = await res.json();
+								var hit = String(data.hitokoto || "").trim();
+								if (hit && hit.length <= MAX_LEN + 4) {
+									textEl.textContent = hit.length > MAX_LEN ? hit.slice(0, MAX_LEN - 1) + "…" : hit;
+									fromEl.textContent = "— " + (data.from_who || data.from || "佚名");
+									return;
+								}
+							}
+						} catch (_) {}
+					}
+					var q = pickLocal();
+					textEl.textContent = q.t;
+					fromEl.textContent = "— " + q.f;
+				}
+
 				loadHitokoto();
-				const b = document.getElementById("hitokoto-refresh");
-				if (b) b.addEventListener("click", loadHitokoto);
-			});
+				var btn = document.getElementById("hitokoto-refresh");
+				if (btn) btn.addEventListener("click", loadHitokoto);
+				document.addEventListener("swup:page:view", function () {
+					loadHitokoto();
+					var b = document.getElementById("hitokoto-refresh");
+					if (b) b.addEventListener("click", loadHitokoto);
+				});
+			})();
 		</script>
 	)
 }
+
+<style>
+	.hitokoto-card__text {
+		/* 尽量单行/两行，短句更紧凑 */
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+		overflow: hidden;
+		font-size: 0.84rem;
+	}
+</style>

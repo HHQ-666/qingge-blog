@@ -1,9 +1,9 @@
 ---
 /**
  * 华语金曲播放器
- * - 封面与「上一首/进度/下一首」同一行
+ * - 默认圆盘 FAB；点开完整面板（封面/进度/歌单）
+ * - 面板内可切「精简模式」：迷你条（封面播放 + 上/下首）
  * - localStorage 缓存歌单，刷新页面不重复探测
- * - 播放叠在封面；仅音柱动画
  */
 import { funConfig } from "../../config";
 
@@ -30,6 +30,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			data-volume={volume}
 			data-cache-hours={cacheHours}
 		>
+			{/* 默认：圆盘 FAB */}
 			<button type="button" class="qm__fab" id="qm-toggle" title="打开华语金曲电台" aria-expanded="false">
 				<span class="qm__fab-ring" aria-hidden="true" />
 				<span class="qm__fab-disc" aria-hidden="true">
@@ -37,6 +38,32 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					<span class="qm__fab-eq"><i /><i /><i /><i /></span>
 				</span>
 			</button>
+
+			{/* 精简迷你条：仅在面板内点「精简模式」后显示 */}
+			<div class="qm__mini" id="qm-mini" role="group" aria-label="电台精简控制" hidden>
+				<button type="button" class="qm__mini-cover" id="qm-mini-play" aria-label="播放">
+					<img id="qm-mini-cover" class="qm__mini-cover-img" alt="" hidden />
+					<span class="qm__mini-cover-fallback" id="qm-mini-cover-fallback" aria-hidden="true">♪</span>
+					<span class="qm__mini-play-icon" id="qm-mini-icon-play" aria-hidden="true" />
+					<span class="qm__mini-pause-icon" id="qm-mini-icon-pause" aria-hidden="true" hidden />
+				</button>
+				<button type="button" class="qm__mini-meta" id="qm-mini-expand-meta" title="打开完整电台">
+					<span class="qm__mini-song" id="qm-mini-song">华语金曲电台</span>
+					<span class="qm__mini-artist" id="qm-mini-artist">点封面播放 · 点此展开</span>
+				</button>
+				<div class="qm__mini-actions">
+					<button type="button" class="qm__mini-nav" id="qm-mini-prev" aria-label="上一首" title="上一首">
+						<span class="qm__nav-prev" aria-hidden="true" />
+					</button>
+					<button type="button" class="qm__mini-nav" id="qm-mini-next" aria-label="下一首" title="下一首">
+						<span class="qm__nav-next" aria-hidden="true" />
+					</button>
+					<button type="button" class="qm__mini-expand" id="qm-mini-open-full" title="完整模式" aria-label="打开完整电台">
+						<span class="qm__mini-expand-icon" aria-hidden="true" />
+					</button>
+					<button type="button" class="qm__mini-close" id="qm-mini-close" title="收起" aria-label="收起电台">✕</button>
+				</div>
+			</div>
 
 			<div class="qm__panel" id="qm-panel" role="dialog" aria-label={title}>
 				<div class="qm__panel-bg" aria-hidden="true" />
@@ -46,7 +73,12 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							<p class="qm__eyebrow">{subtitle}</p>
 							<h2 class="qm__title">{title}</h2>
 						</div>
-						<button type="button" class="qm__close" id="qm-close" aria-label="收起">✕</button>
+						<div class="qm__head-actions">
+							<button type="button" class="qm__compact-btn" id="qm-compact" title="精简模式" aria-label="切换到精简模式">
+								精简模式
+							</button>
+							<button type="button" class="qm__close" id="qm-close" aria-label="收起">✕</button>
+						</div>
 					</header>
 
 					<div class="qm__loading" id="qm-loading" hidden>
@@ -123,6 +155,16 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var CACHE_KEY = "qingge-music-playlist-v2";
 
 				var toggle = document.getElementById("qm-toggle");
+				var miniExpandMeta = document.getElementById("qm-mini-expand-meta");
+				var miniPlayBtn = document.getElementById("qm-mini-play");
+				var miniPrevBtn = document.getElementById("qm-mini-prev");
+				var miniNextBtn = document.getElementById("qm-mini-next");
+				var miniSongEl = document.getElementById("qm-mini-song");
+				var miniArtistEl = document.getElementById("qm-mini-artist");
+				var miniCoverEl = document.getElementById("qm-mini-cover");
+				var miniCoverFallback = document.getElementById("qm-mini-cover-fallback");
+				var miniIconPlay = document.getElementById("qm-mini-icon-play");
+				var miniIconPause = document.getElementById("qm-mini-icon-pause");
 				var closeBtn = document.getElementById("qm-close");
 				var loadingEl = document.getElementById("qm-loading");
 				var readyEl = document.getElementById("qm-ready");
@@ -188,16 +230,43 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					} catch (e) {}
 				}
 
+				var miniEl = document.getElementById("qm-mini");
+				var compactBtn = document.getElementById("qm-compact");
+				var miniOpenFull = document.getElementById("qm-mini-open-full");
+				var miniCloseBtn = document.getElementById("qm-mini-close");
+				var MODE_KEY = "qingge-music-mode";
+
+				/** mode: 'fab' | 'full' | 'compact' */
+				function setMode(mode) {
+					var isFull = mode === "full";
+					var isCompact = mode === "compact";
+					root.classList.toggle("is-collapsed", mode === "fab");
+					root.classList.toggle("is-open", isFull);
+					root.classList.toggle("is-compact", isCompact);
+					if (toggle) toggle.setAttribute("aria-expanded", isFull ? "true" : "false");
+					if (miniEl) miniEl.hidden = !isCompact;
+					try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+					if (isFull || isCompact) ensureLoaded();
+				}
 				function setOpen(open) {
-					root.classList.toggle("is-collapsed", !open);
-					root.classList.toggle("is-open", open);
-					if (toggle) toggle.setAttribute("aria-expanded", open ? "true" : "false");
-					if (open) ensureLoaded();
+					setMode(open ? "full" : "fab");
 				}
 				if (toggle) toggle.addEventListener("click", function () {
-					setOpen(root.classList.contains("is-collapsed"));
+					setMode("full");
 				});
-				if (closeBtn) closeBtn.addEventListener("click", function () { setOpen(false); });
+				if (compactBtn) compactBtn.addEventListener("click", function () {
+					setMode("compact");
+				});
+				if (miniExpandMeta) miniExpandMeta.addEventListener("click", function () {
+					setMode("full");
+				});
+				if (miniOpenFull) miniOpenFull.addEventListener("click", function () {
+					setMode("full");
+				});
+				if (miniCloseBtn) miniCloseBtn.addEventListener("click", function () {
+					setMode("fab");
+				});
+				if (closeBtn) closeBtn.addEventListener("click", function () { setMode("fab"); });
 
 				function fmt(t) {
 					if (!isFinite(t) || t < 0) return "0:00";
@@ -211,6 +280,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (iconPlay) iconPlay.hidden = !!on;
 					if (iconPause) iconPause.hidden = !on;
 					if (playBtn) playBtn.setAttribute("aria-label", on ? "暂停" : "播放");
+					if (miniIconPlay) miniIconPlay.hidden = !!on;
+					if (miniIconPause) miniIconPause.hidden = !on;
+					if (miniPlayBtn) miniPlayBtn.setAttribute("aria-label", on ? "暂停" : "播放");
 				}
 				function stopPlaybackIntent() {
 					shouldBePlaying = false;
@@ -238,6 +310,8 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (!item) return;
 					if (songEl) songEl.textContent = item.name || "未知歌曲";
 					if (artistEl) artistEl.textContent = item.artist || "";
+					if (miniSongEl) miniSongEl.textContent = item.name || "未知歌曲";
+					if (miniArtistEl) miniArtistEl.textContent = item.artist || "华语金曲电台";
 					if ("mediaSession" in navigator && "MediaMetadata" in window) {
 						try {
 							navigator.mediaSession.metadata = new MediaMetadata({
@@ -264,6 +338,25 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							coverEl.removeAttribute("src");
 							coverEl.style.display = "none";
 							coverFallback.style.display = "grid";
+						}
+					}
+					if (miniCoverEl && miniCoverFallback) {
+						if (item.cover) {
+							miniCoverEl.onload = function () {
+								miniCoverEl.hidden = false;
+								miniCoverFallback.style.display = "none";
+							};
+							miniCoverEl.onerror = function () {
+								miniCoverEl.hidden = true;
+								miniCoverFallback.style.display = "grid";
+							};
+							miniCoverEl.src = item.cover;
+							miniCoverEl.hidden = false;
+							miniCoverFallback.style.display = "none";
+						} else {
+							miniCoverEl.removeAttribute("src");
+							miniCoverEl.hidden = true;
+							miniCoverFallback.style.display = "grid";
 						}
 					}
 				}
@@ -396,6 +489,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				if (playBtn) playBtn.addEventListener("click", togglePlay);
 				if (prevBtn) prevBtn.addEventListener("click", function () { playIndex(index - 1, true); });
 				if (nextBtn) nextBtn.addEventListener("click", function () { playIndex(index + 1, true); });
+				if (miniPlayBtn) miniPlayBtn.addEventListener("click", function () {
+					ensureLoaded().then(function () { togglePlay(); });
+				});
+				if (miniPrevBtn) miniPrevBtn.addEventListener("click", function () {
+					ensureLoaded().then(function () { playIndex(index - 1, true); });
+				});
+				if (miniNextBtn) miniNextBtn.addEventListener("click", function () {
+					ensureLoaded().then(function () { playIndex(index + 1, true); });
+				});
 
 				if (audio) {
 					audio.volume = volume;
@@ -561,8 +663,217 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				bottom: 1.1rem;
 				z-index: 90;
 				font-family: inherit;
+				/* 迷你条与完整面板共用锚点 */
+				display: flex;
+				flex-direction: column;
+				align-items: flex-end;
+				gap: 0.5rem;
 			}
 
+			/* ===== 精简迷你条（仅 is-compact 显示）—— 半透明毛玻璃 + 主题色 ===== */
+			.qm.is-compact .qm__mini {
+				display: flex;
+				align-items: center;
+				gap: 0.55rem;
+				width: min(20.5rem, calc(100vw - 1.5rem));
+				padding: 0.45rem 0.5rem 0.45rem 0.45rem;
+				border-radius: 999px;
+				/* 浅色：暖橙半透明；深色：暗色半透明 */
+				background:
+					linear-gradient(
+						135deg,
+						oklch(0.96 0.03 var(--hue) / 0.72),
+						oklch(0.92 0.05 var(--hue) / 0.62)
+					);
+				border: 1px solid oklch(0.72 0.08 var(--hue) / 0.35);
+				box-shadow:
+					0 12px 32px -14px oklch(0.5 0.1 var(--hue) / 0.4),
+					0 0 0 1px oklch(1 0 0 / 0.35) inset;
+				backdrop-filter: blur(18px) saturate(1.35);
+				-webkit-backdrop-filter: blur(18px) saturate(1.35);
+				color: oklch(0.32 0.04 var(--hue));
+				animation: qm-in 240ms cubic-bezier(0.22,1,0.36,1);
+			}
+			:global(.dark) .qm.is-compact .qm__mini {
+				background:
+					linear-gradient(
+						135deg,
+						oklch(0.28 0.04 var(--hue) / 0.68),
+						oklch(0.2 0.03 260 / 0.58)
+					);
+				border-color: oklch(0.72 0.08 var(--hue) / 0.28);
+				box-shadow:
+					0 14px 36px -16px rgba(0,0,0,0.55),
+					0 0 0 1px oklch(1 0 0 / 0.08) inset;
+				color: oklch(0.94 0.02 var(--hue));
+			}
+
+			.qm__mini-cover {
+				position: relative;
+				width: 2.55rem;
+				height: 2.55rem;
+				flex-shrink: 0;
+				border: none;
+				padding: 0;
+				border-radius: 50%;
+				overflow: hidden;
+				cursor: pointer;
+				background: transparent;
+				font-size: 0;
+				line-height: 0;
+			}
+			.qm__mini-cover::before { content: none !important; display: none !important; }
+			.qm__mini-cover-img {
+				position: absolute; inset: 0; width: 100%; height: 100%;
+				object-fit: cover; border-radius: inherit;
+			}
+			.qm__mini-cover-fallback {
+				position: absolute; inset: 0; display: grid; place-items: center;
+				font-size: 0.95rem; color: #fff;
+				background: linear-gradient(135deg, oklch(0.68 0.12 var(--hue)), oklch(0.45 0.1 var(--hue)));
+			}
+			.qm__mini-play-icon {
+				position: absolute; left: 50%; top: 50%; z-index: 2;
+				transform: translate(-42%, -50%);
+				width: 0; height: 0;
+				border-style: solid;
+				border-width: 5px 0 5px 8px;
+				border-color: transparent transparent transparent #fff;
+				filter: drop-shadow(0 1px 3px oklch(0.35 0.08 var(--hue) / 0.55));
+				pointer-events: none;
+			}
+			.qm__mini-pause-icon {
+				position: absolute; left: 50%; top: 50%; z-index: 2;
+				transform: translate(-50%, -50%);
+				width: 9px; height: 11px;
+				background:
+					linear-gradient(#fff,#fff) left / 2.5px 100% no-repeat,
+					linear-gradient(#fff,#fff) right / 2.5px 100% no-repeat;
+				filter: drop-shadow(0 1px 3px oklch(0.35 0.08 var(--hue) / 0.55));
+				pointer-events: none;
+			}
+			/* 封面叠加半透明主题遮罩，图标更清晰 */
+			.qm__mini-cover::after {
+				content: "" !important;
+				display: block !important;
+				position: absolute; inset: 0;
+				border-radius: inherit;
+				background: oklch(0.4 0.08 var(--hue) / 0.28);
+				pointer-events: none;
+				z-index: 1;
+			}
+			.qm.is-playing .qm__mini-cover {
+				box-shadow: 0 0 0 2px oklch(0.72 0.12 var(--hue) / 0.55);
+				animation: qm-spin 4.2s linear infinite;
+			}
+			.qm__mini-play-icon[hidden],
+			.qm__mini-pause-icon[hidden] { display: none !important; }
+
+			.qm__mini-meta {
+				flex: 1;
+				min-width: 0;
+				border: none;
+				background: transparent;
+				padding: 0;
+				text-align: left;
+				cursor: pointer;
+				color: inherit;
+			}
+			.qm__mini-song {
+				display: block;
+				font-size: 0.84rem;
+				font-weight: 700;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				color: oklch(0.32 0.05 var(--hue));
+			}
+			.qm__mini-artist {
+				display: block;
+				margin-top: 0.1rem;
+				font-size: 0.68rem;
+				opacity: 0.72;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				color: oklch(0.42 0.06 var(--hue));
+			}
+			:global(.dark) .qm__mini-song {
+				color: oklch(0.95 0.02 var(--hue));
+			}
+			:global(.dark) .qm__mini-artist {
+				color: oklch(0.86 0.03 var(--hue));
+				opacity: 0.7;
+			}
+
+			.qm__mini-actions {
+				display: inline-flex;
+				align-items: center;
+				gap: 0.2rem;
+				flex-shrink: 0;
+			}
+			.qm__mini-nav,
+			.qm__mini-expand,
+			.qm__mini-close {
+				width: 1.7rem;
+				height: 1.7rem;
+				border-radius: 999px;
+				border: none;
+				padding: 0;
+				background: oklch(0.72 0.08 var(--hue) / 0.18);
+				color: oklch(0.4 0.1 var(--hue));
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				cursor: pointer;
+				font-size: 0;
+				line-height: 0;
+				transition: background 140ms ease, color 140ms ease;
+			}
+			.qm__mini-nav:hover,
+			.qm__mini-expand:hover,
+			.qm__mini-close:hover {
+				background: oklch(0.68 0.12 var(--hue) / 0.28);
+				color: oklch(0.42 0.13 var(--hue));
+			}
+			:global(.dark) .qm__mini-nav,
+			:global(.dark) .qm__mini-expand,
+			:global(.dark) .qm__mini-close {
+				background: oklch(0.85 0.06 var(--hue) / 0.12);
+				color: oklch(0.92 0.03 var(--hue));
+			}
+			:global(.dark) .qm__mini-nav:hover,
+			:global(.dark) .qm__mini-expand:hover,
+			:global(.dark) .qm__mini-close:hover {
+				background: oklch(0.78 0.1 var(--hue) / 0.22);
+			}
+			.qm__mini-nav::before,
+			.qm__mini-nav::after,
+			.qm__mini-expand::before,
+			.qm__mini-expand::after { content: none !important; display: none !important; }
+			/* 上一首/下一首箭头：跟随文字色 */
+			.qm.is-compact .qm__nav-prev {
+				border-color: transparent currentColor transparent transparent;
+			}
+			.qm.is-compact .qm__nav-prev::before {
+				background: currentColor;
+			}
+			.qm.is-compact .qm__nav-next {
+				border-color: transparent transparent transparent currentColor;
+			}
+			.qm.is-compact .qm__nav-next::after {
+				background: currentColor;
+			}
+			.qm__mini-expand-icon {
+				width: 0.72rem;
+				height: 0.72rem;
+				border-right: 1.6px solid currentColor;
+				border-top: 1.6px solid currentColor;
+				transform: rotate(-45deg);
+				margin-top: 2px;
+			}
+
+			/* 默认圆盘 FAB */
 			.qm__fab {
 				position: relative;
 				width: 4.25rem; height: 4.25rem;
@@ -571,7 +882,46 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				transition: transform 200ms ease;
 			}
 			.qm__fab:hover { transform: scale(1.06) translateY(-2px); }
-			.qm.is-open .qm__fab { display: none; }
+			/* 打开完整面板 或 精简模式时隐藏 FAB */
+			.qm.is-open .qm__fab,
+			.qm.is-compact .qm__fab { display: none; }
+
+			/* 迷你条仅 is-compact 显示 */
+			.qm__mini { display: none; }
+			.qm.is-compact .qm__mini { display: flex; }
+			.qm__mini[hidden] { display: none !important; }
+
+			.qm__head-actions {
+				display: flex;
+				align-items: center;
+				gap: 0.4rem;
+			}
+			.qm__compact-btn {
+				height: 2rem;
+				padding: 0 0.75rem;
+				border-radius: 999px;
+				border: 1px solid oklch(0.85 0.08 var(--hue) / 0.35);
+				background: oklch(0.78 0.1 var(--hue) / 0.22);
+				color: #fff;
+				font-size: 0.72rem;
+				font-weight: 700;
+				cursor: pointer;
+				white-space: nowrap;
+				letter-spacing: 0.02em;
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+				transition: background 140ms ease, border-color 140ms ease;
+			}
+			.qm__compact-btn:hover {
+				background: oklch(0.78 0.12 var(--hue) / 0.38);
+				border-color: oklch(0.88 0.08 var(--hue) / 0.5);
+			}
+
+			.qm__mini-close {
+				font-size: 0.75rem;
+				line-height: 1;
+			}
+
 			.qm__fab-ring {
 				position: absolute; inset: 0; border-radius: 50%;
 				border: 2px solid oklch(0.78 0.1 var(--hue) / 0.5);
@@ -884,14 +1234,21 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				#qingge-music.qm {
 					right: -0.85rem;
 					bottom: max(0.75rem, env(safe-area-inset-bottom));
+					left: auto;
+					width: auto;
+					display: flex;
+					justify-content: flex-end;
 					transition: right 200ms ease;
 				}
-				#qingge-music.qm.is-open { right: max(0.75rem, env(safe-area-inset-right)); }
+				#qingge-music.qm.is-open,
+				#qingge-music.qm.is-compact {
+					right: max(0.55rem, env(safe-area-inset-right));
+					left: max(0.55rem, env(safe-area-inset-left));
+				}
 				.qm__fab {
 					width: 3.35rem;
 					height: 3.35rem;
 					opacity: 0.62;
-					transition: transform 200ms ease, opacity 200ms ease;
 				}
 				.qm.is-collapsed .qm__fab { transform: translateX(0.3rem); }
 				.qm.is-collapsed .qm__fab:hover,
@@ -899,9 +1256,17 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					opacity: 1;
 					transform: translateX(-0.15rem);
 				}
+				.qm.is-compact .qm__mini {
+					width: 100%;
+					max-width: none;
+				}
+				.qm__panel {
+					width: min(22.5rem, calc(100vw - 1.1rem));
+				}
 			}
 			@media (prefers-reduced-motion: reduce) {
-				.qm__fab-disc, .qm__fab-ring, .qm__fab-eq i, .qm__eq i, .qm__orbit span {
+				.qm__fab-disc, .qm__fab-ring, .qm__fab-eq i, .qm__eq i, .qm__orbit span,
+				.qm.is-playing .qm__mini-cover {
 					animation: none !important;
 				}
 			}

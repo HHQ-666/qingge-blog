@@ -14,7 +14,7 @@ if (enabled && conf.startDate) {
 
 {
 	enabled && (
-		<div class="card-base p-4 onload-animation" style="animation-delay: 220ms">
+		<div class="card-base p-4 onload-animation site-days" style="animation-delay: 220ms">
 			<div class="flex items-center gap-2 mb-2 text-50">
 				<Icon name="material-symbols:nest-clock-farsight-analog-outline-rounded" class="text-[1.15rem] text-[var(--primary)]" />
 				<span class="text-sm font-semibold tracking-wide">小屋足迹</span>
@@ -24,19 +24,20 @@ if (enabled && conf.startDate) {
 				<span class="font-bold text-[var(--primary)] text-lg mx-1 tabular-nums">{days}</span>
 				天
 			</p>
-			<p class="text-50 text-xs mt-1.5">
+			<p class="text-50 text-xs mt-1.5 leading-relaxed">
 				从 {conf.startDate} 起，一点点堆起的文字与风景。
 			</p>
 			{
 				funConfig.busuanzi && (
-					<p class="text-50 text-xs mt-2.5 flex flex-wrap gap-x-3 gap-y-1">
+					<p class="site-days__stats text-50 text-xs">
 						<span>
 							本站访客
-							<span id="busuanzi_value_site_uv" class="mx-0.5 font-semibold text-75">-</span>
+							<span data-busuanzi="site_uv" class="site-days__num">-</span>
 						</span>
+						<span class="site-days__dot" aria-hidden="true">·</span>
 						<span>
 							总访问
-							<span id="busuanzi_value_site_pv" class="mx-0.5 font-semibold text-75">-</span>
+							<span data-busuanzi="site_pv" class="site-days__num">-</span>
 						</span>
 					</p>
 				)
@@ -44,3 +45,27 @@ if (enabled && conf.startDate) {
 		</div>
 	)
 }
+
+<style>
+	.site-days__stats {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.15rem 0.35rem;
+		margin-top: 0.55rem;
+		line-height: 1.4;
+	}
+	.site-days__num {
+		margin: 0 0.15rem;
+		font-weight: 600;
+		color: oklch(0.42 0.03 var(--hue));
+		font-variant-numeric: tabular-nums;
+	}
+	:global(.dark) .site-days__num {
+		color: oklch(0.86 0.02 var(--hue));
+	}
+	.site-days__dot {
+		opacity: 0.45;
+		padding: 0 0.05rem;
+	}
+</style>

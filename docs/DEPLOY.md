@@ -59,37 +59,76 @@ git remote -v
 
 ---
 
-## 二、Giscus 评论（GitHub Discussions）
+## 二、Twikoo 评论（推荐，无需 GitHub 登录）
 
 文章页组件：[`src/components/Comment.astro`](../src/components/Comment.astro)  
-开关与配置：[`src/config.ts`](../src/config.ts) → `giscusConfig`
+开关与配置：[`src/config.ts`](../src/config.ts) → `twikooConfig`
 
-### 启用步骤
+访客只需 **昵称 + 邮箱** 即可评论，无需 GitHub 账号。
 
-1. 在 **博客仓库**（`HHQ-666/qingge-blog`）→ **Settings → General → Features** 勾选 **Discussions**  
-2. 打开 [giscus.app](https://giscus.app/zh-CN)  
-3. 填入仓库 `HHQ-666/qingge-blog`，按页面提示：  
-   - 安装 **giscus** GitHub App 并授权该仓库  
-   - Discussion 分类常用 `Announcements`  
-   - mapping 选 **pathname**（与代码一致）  
-4. 复制生成的 `data-repo-id`、`data-category-id`  
-5. 填进 `src/config.ts`：
+### 当前生产配置（已启用）
+
+| 项 | 值 |
+|----|-----|
+| 云函数平台 | Netlify（站点 `darling-axolotl-6d79b4`） |
+| 仓库 | [HHQ-666/twikoo-netlify](https://github.com/HHQ-666/twikoo-netlify)（fork 自官方） |
+| 数据库 | MongoDB Atlas |
+| envId | `https://darling-axolotl-6d79b4.netlify.app/.netlify/functions/twikoo` |
 
 ```ts
-export const giscusConfig = {
+export const twikooConfig = {
   enable: true,
-  repo: "HHQ-666/qingge-blog",
-  repoId: "R_xxxx",          // 从 giscus.app 复制
-  category: "Announcements",
-  categoryId: "DIC_xxxx",    // 从 giscus.app 复制
-  // 其余保持默认即可
+  envId: "https://darling-axolotl-6d79b4.netlify.app/.netlify/functions/twikoo",
+  region: "",
+  path: "pathname",
 };
 ```
 
-6. 提交并部署后，打开任意文章页底部即可评论（访客需登录 GitHub）。
+### 从零部署（Netlify + MongoDB，推荐免费方案）
 
-> 未填 `repoId` / `categoryId` 时，文章页会显示「待开启」引导卡片，不会加载 giscus 脚本。  
-> 暂不需要评论时设 `enable: false` 即可隐藏整块区域。
+1. **MongoDB Atlas**  
+   - 创建免费 Cluster  
+   - Database User + 密码  
+   - Network Access 添加 `0.0.0.0/0`  
+   - 复制连接串，将 `<password>` 换成真实密码  
+
+2. **Fork** [twikoojs/twikoo-netlify](https://github.com/twikoojs/twikoo-netlify) 到自己的 GitHub  
+
+3. **Netlify**  
+   - Add new site → Import → 选择 fork 的 `twikoo-netlify`（**不是**博客仓库）  
+   - Environment variables 新增：`MONGODB_URI` = 完整连接串  
+   - Deploy；改环境变量后需 **Trigger deploy** 再部署一次  
+
+4. 部署成功后 envId 为：
+
+```text
+https://你的站点.netlify.app/.netlify/functions/twikoo
+```
+
+浏览器打开该地址，或 POST `{"event":"GET_CONFIG"}` 应返回正常配置。
+
+5. 填入博客 `src/config.ts` 的 `twikooConfig.envId`，重新部署**博客**。
+
+### 其它部署方式
+
+- 腾讯云 / Vercel / Hugging Face 等见 [Twikoo 文档](https://twikoo.js.org/backend.html)  
+- 注意：腾讯云「一键部署」免费额度通常不足以支撑 Twikoo，不推荐  
+
+### 说明
+
+- 未填 `envId` 时，文章页显示「待配置」引导卡片。  
+- 暂不需要评论：`twikooConfig.enable: false`。  
+- 旧 Giscus 保留在 `giscusConfig`（默认关闭）。切回：  
+  `twikooConfig.enable = false` 且 `giscusConfig.enable = true`。  
+- MongoDB 密码、连接串只放在 Netlify 环境变量，**不要提交到 Git**。
+
+---
+
+## 二（附）、Giscus 评论（可选，需 GitHub 登录）
+
+1. 仓库开启 Discussions，并在 [giscus.app](https://giscus.app/zh-CN) 配置  
+2. 把 `repoId` / `categoryId` 写入 `giscusConfig`  
+3. 关闭 Twikoo：`twikooConfig.enable: false`，打开 Giscus：`giscusConfig.enable: true`
 
 ---
 
@@ -97,9 +136,10 @@ export const giscusConfig = {
 
 - [x] `git remote` 的 `origin` 指向 `HHQ-666/qingge-blog`
 - [x] `astro.config.mjs` 的 `site` 为自定义域名 `https://blog.hhq688.com/`
+- [x] Twikoo `envId` 已配置（Netlify）
+- [x] 自定义域名与 `site` 一致
 - [ ] 本地 `pnpm build` 无报错
-- [ ] （可选）Giscus `repoId` / `categoryId` 已填
-- [ ] （可选）自定义域名与 `site` 一致
+- [ ] 博客已重新部署以加载最新评论配置
 
 ---
 
@@ -143,4 +183,26 @@ pnpm new-post <filename>  # 新建文章
 | 鼠标粒子 | `funConfig.cursorTrail` |
 | 访问统计（不蒜子） | `funConfig.busuanzi` |
 | 站点运行天数 | `funConfig.siteDays`（`startDate`） |
-| 评论 | `giscusConfig` |
+| 评论（Twikoo） | `twikooConfig` |
+| 评论（Giscus 备用） | `giscusConfig` |
+
+---
+
+## 七、移动端与电台体验（本站定制）
+
+| 模块 | 说明 |
+|------|------|
+| Banner | 首屏静态海报占位；视频空闲加载，出帧后淡入 |
+| 欢迎卡 | PC 显示副标题；移动端显示今日一言短句 + 刷新 |
+| 分类/标签 | 默认单行，点「更多」同宽流式展开 |
+| 电台 | 默认圆盘 FAB；完整面板内可切「精简模式」迷你条（半透明、跟随主题色） |
+| 访客统计 | 不蒜子 JSONP 填充侧栏与页脚 |
+
+相关组件：
+
+- `src/components/BannerMedia.astro`
+- `src/components/HomeHero.astro`
+- `src/components/fun/MusicPlayer.astro`
+- `src/components/widget/MobileHomeWidgets.astro`
+- `src/components/fun/Busuanzi.astro`
+

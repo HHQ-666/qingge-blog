@@ -6,10 +6,15 @@ import { url } from "../utils/url-utils";
 const banner = siteConfig.banner;
 const videoEnabled = Boolean(banner.video?.enable && banner.video?.src);
 const staticSrc = banner.src;
-const posterSrc = banner.video?.poster || banner.src;
 const position = banner.position || "center";
 // 走 base path，避免部署在子路径时 404
 const videoSrc = banner.video?.src ? url(banner.video.src) : "";
+// 原生 video poster 用 public 静态路径，首屏立刻有图，不依赖 Astro 哈希资源
+const nativePoster = banner.video?.posterPublic
+	? url(banner.video.posterPublic)
+	: banner.video?.src
+		? url(String(banner.video.src).replace(/\.mp4$/i, "-poster.jpg"))
+		: "";
 ---
 
 {
@@ -18,8 +23,9 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 			id="banner"
 			class="banner-media object-cover h-full relative overflow-hidden"
 			data-video-enabled="1"
+			data-video-src={videoSrc}
 		>
-			{/* 静态图负责首帧与播放失败兜底。 */}
+			{/* 静态图：首屏立刻可见，视频加载前/失败时兜底 */}
 			<div class="banner-media__static absolute inset-0" aria-hidden="true">
 				<ImageWrapper
 					src={staticSrc}
@@ -29,27 +35,18 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 				/>
 			</div>
 
+			{/* 不在 HTML 里写 src，避免首屏黑帧；由脚本在空闲时挂载 */}
 			<video
 				id="banner-video"
 				class="banner-media__video"
-				src={videoSrc}
 				style={`object-position: ${position}`}
+				poster={nativePoster || undefined}
 				muted
 				playsinline
-				autoplay
 				loop
-				preload="metadata"
+				preload="none"
 				aria-hidden="true"
 			/>
-
-			<div class="banner-media__poster absolute inset-0">
-				<ImageWrapper
-					src={posterSrc}
-					alt="Banner poster"
-					position={position}
-					class="w-full h-full"
-				/>
-			</div>
 		</div>
 	) : (
 		<ImageWrapper
@@ -66,8 +63,8 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 	videoEnabled && (
 		<script is:inline>
 			(function () {
-				/** 多久没播出首帧就保留海报。 */
-				const FAILSAFE_MS = 3500;
+				/** 多久没播出首帧就保留静态图 */
+				const FAILSAFE_MS = 4000;
 
 				const root = document.getElementById("banner");
 				if (!root || root.getAttribute("data-video-enabled") !== "1") return;
@@ -75,10 +72,10 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 				root.dataset.bannerBooted = "1";
 
 				const video = document.getElementById("banner-video");
-				const poster = root.querySelector(".banner-media__poster");
-				if (!(video instanceof HTMLVideoElement)) return;
+				const videoSrc = root.getAttribute("data-video-src") || "";
+				if (!(video instanceof HTMLVideoElement) || !videoSrc) return;
 
-				// iOS 旧版：playsInline + webkit-playsinline 双保险。
+				// iOS 旧版：playsInline + webkit-playsinline 双保险
 				try {
 					video.setAttribute("playsinline", "");
 					video.setAttribute("webkit-playsinline", "");
@@ -89,22 +86,24 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 
 				let hasFrame = false;
 				let failTimer = 0;
+				let sourceAttached = false;
 
-				function hidePoster() {
-					if (poster) poster.classList.add("is-hidden");
-					root.classList.add("is-playing");
+				function markPlaying() {
+					if (hasFrame) return;
 					hasFrame = true;
+					root.classList.add("is-playing");
 					if (failTimer) {
 						clearTimeout(failTimer);
 						failTimer = 0;
 					}
 				}
-				function showPoster() {
-					if (poster) poster.classList.remove("is-hidden");
+
+				function markFallback() {
 					root.classList.remove("is-playing");
 				}
 
 				function tryPlay() {
+					if (!sourceAttached) return;
 					try {
 						video.muted = true;
 						video.defaultMuted = true;
@@ -113,41 +112,48 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 					const p = video.play();
 					if (p && typeof p.catch === "function") {
 						p.catch(function () {
-							// 自动播放被拒时保留海报；用户轻触后再试
+							// 自动播放被拒时保留静态图；用户轻触后再试
 						});
 					}
 				}
 
 				function onFirstFrame() {
-					hidePoster();
+					markPlaying();
 					video.removeEventListener("playing", onFirstFrame);
 					video.removeEventListener("loadeddata", onFirstFrame);
+					video.removeEventListener("canplay", onFirstFrame);
 				}
 
-				function setupVideo() {
+				function attachSource() {
+					if (sourceAttached) return;
+					sourceAttached = true;
+					// 真正开始拉视频时再挂 src，避免首屏抢带宽/黑帧
+					video.src = videoSrc;
+					video.setAttribute("preload", "metadata");
 					video.addEventListener("playing", onFirstFrame, { once: true });
 					video.addEventListener("loadeddata", onFirstFrame, { once: true });
-					video.addEventListener("error", showPoster);
+					video.addEventListener("canplay", onFirstFrame, { once: true });
+					video.addEventListener("error", markFallback);
 					tryPlay();
-					// 超时仍未出帧：保留静态图/海报，不再空等黑屏
 					failTimer = window.setTimeout(function () {
-						if (!hasFrame) showPoster();
+						if (!hasFrame) markFallback();
 					}, FAILSAFE_MS);
 				}
 
 				function unlockOnce() {
-					tryPlay();
+					if (!sourceAttached) attachSource();
+					else tryPlay();
 				}
 				document.addEventListener("touchstart", unlockOnce, { passive: true, once: true });
 				document.addEventListener("click", unlockOnce, { once: true });
 
-				// 等首屏绘制后再挂源，避免抢占关键资源
+				// 等首屏绘制后再挂源，静态图先占位
 				if (typeof requestIdleCallback === "function") {
 					requestIdleCallback(function () {
-						setupVideo();
-					}, { timeout: 800 });
+						attachSource();
+					}, { timeout: 600 });
 				} else {
-					window.setTimeout(setupVideo, 120);
+					window.setTimeout(attachSource, 80);
 				}
 
 				document.addEventListener("swup:page:view", function () {
@@ -162,7 +168,7 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 }
 
 <style>
-	/* 不再依赖 JS 去掉 opacity-0：默认可见，避免移动端白屏 */
+	/* 默认可见：用静态图填满，避免移动端白屏/空白 */
 	.banner-media {
 		opacity: 1;
 		transform: scale(1);
@@ -175,35 +181,29 @@ const videoSrc = banner.video?.src ? url(banner.video.src) : "";
 		z-index: 1;
 		pointer-events: none;
 	}
-	.banner-media__poster {
-		transition: opacity 500ms ease;
-		pointer-events: none;
-		z-index: 3;
-	}
-	.banner-media__poster.is-hidden {
-		opacity: 0;
-		z-index: 0;
-	}
-	/* 播放成功后可略降静态层（海报已隐藏） */
-	.banner-media.is-playing .banner-media__static {
-		opacity: 0;
-		transition: opacity 400ms ease;
-	}
 	.banner-media__video {
 		position: absolute;
 		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
-		opacity: 1;
+		/* 未出首帧前完全透明，只露出下层静态图 */
+		opacity: 0;
 		transition: opacity 420ms ease;
 		z-index: 2;
 		transform: translateZ(0);
 		backface-visibility: hidden;
 		background: transparent;
 	}
+	.banner-media.is-playing .banner-media__video {
+		opacity: 1;
+	}
+	/* 播放成功后可略降静态层（视频已盖住） */
+	.banner-media.is-playing .banner-media__static {
+		opacity: 0;
+		transition: opacity 400ms ease;
+	}
 	.banner-media--static {
-		/* 纯静态模式：轻入场，不挡内容 */
 		animation: banner-in 700ms ease both;
 	}
 	@keyframes banner-in {

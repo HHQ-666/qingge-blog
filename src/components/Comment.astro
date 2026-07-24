@@ -2,19 +2,155 @@
 import { Icon } from "astro-icon/components";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import { giscusConfig } from "../config";
+import { giscusConfig, twikooConfig } from "../config";
 
-const fullyConfigured =
+const twikooReady = twikooConfig.enable && Boolean(twikooConfig.envId?.trim());
+const twikooPlaceholder = twikooConfig.enable && !twikooReady;
+
+const giscusReady =
+	!twikooConfig.enable &&
 	giscusConfig.enable &&
 	Boolean(giscusConfig.repo) &&
 	Boolean(giscusConfig.repoId) &&
 	Boolean(giscusConfig.categoryId);
 
-const showPlaceholder = giscusConfig.enable && !fullyConfigured;
+const giscusPlaceholder =
+	!twikooConfig.enable && giscusConfig.enable && !giscusReady;
+
+const envId = twikooConfig.envId?.trim() || "";
+const region = twikooConfig.region || "";
+const pathMode = twikooConfig.path || "pathname";
 ---
 
+{/* ========== Twikoo（推荐：无需 GitHub） ========== */}
 {
-	fullyConfigured && (
+	twikooReady && (
+		<section
+			class="card-base rounded-[var(--radius-large)] overflow-hidden p-4 md:p-6 mb-4 onload-animation comment-section"
+			aria-label={i18n(I18nKey.comments)}
+			data-comment-provider="twikoo"
+		>
+			<h2 class="text-lg font-bold text-90 mb-4 flex items-center gap-2">
+				<span class="inline-block w-1 h-5 rounded-full bg-[var(--primary)]" />
+				{i18n(I18nKey.comments)}
+			</h2>
+			<div id="tcomment" class="twikoo-host" />
+			<script
+				is:inline
+				define:vars={{ envId, region, pathMode }}
+			>
+				(function () {
+					var booted = false;
+					function path() {
+						if (pathMode === "url") return location.href;
+						return location.pathname;
+					}
+					function theme() {
+						return document.documentElement.classList.contains("dark")
+							? "dark"
+							: "light";
+					}
+					function mount() {
+						var el = document.getElementById("tcomment");
+						if (!el || typeof twikoo === "undefined") return;
+						// 清空旧实例（Swup 切页）
+						el.innerHTML = "";
+						try {
+							twikoo.init({
+								envId: envId,
+								el: "#tcomment",
+								path: path(),
+								region: region || undefined,
+								lang: "zh-CN",
+							});
+						} catch (e) {
+							console.error("[twikoo]", e);
+						}
+					}
+					function loadScript(cb) {
+						if (typeof twikoo !== "undefined") {
+							cb();
+							return;
+						}
+						var s = document.createElement("script");
+						s.src = "https://cdn.jsdelivr.net/npm/twikoo@1.6.44/dist/twikoo.min.js";
+						s.async = true;
+						s.onload = cb;
+						s.onerror = function () {
+							var el = document.getElementById("tcomment");
+							if (el) el.innerHTML = '<p class="text-50 text-sm">评论加载失败，请稍后刷新重试。</p>';
+						};
+						document.head.appendChild(s);
+					}
+					function boot() {
+						if (!document.getElementById("tcomment")) return;
+						loadScript(mount);
+					}
+					if (document.readyState === "loading") {
+						document.addEventListener("DOMContentLoaded", boot);
+					} else {
+						boot();
+					}
+					document.addEventListener("swup:page:view", boot);
+					// 跟随站点亮暗切换时刷新主题（Twikoo 读 html.dark）
+					document.addEventListener("theme-change", boot);
+				})();
+			</script>
+		</section>
+	)
+}
+
+{
+	twikooPlaceholder && (
+		<section
+			class="card-base rounded-[var(--radius-large)] overflow-hidden p-5 md:p-6 mb-4 onload-animation comment-placeholder"
+			aria-label={i18n(I18nKey.comments)}
+		>
+			<div class="flex items-start gap-3">
+				<div class="shrink-0 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--btn-regular-bg)] text-[var(--primary)]">
+					<Icon name="material-symbols:chat-bubble-outline-rounded" class="text-[1.35rem]" />
+				</div>
+				<div class="min-w-0 flex-1">
+					<h2 class="text-lg font-bold text-90 mb-1.5 flex items-center gap-2">
+						{i18n(I18nKey.comments)}
+						<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--btn-regular-bg)] text-50">
+							待配置
+						</span>
+					</h2>
+					<p class="text-75 text-sm leading-relaxed mb-3">
+						已切换为 <strong>Twikoo</strong>（无需 GitHub 登录，昵称 + 邮箱即可评论）。
+						请先部署云函数拿到 <code class="text-xs">envId</code>，填入
+						<code class="text-xs">src/config.ts</code> 的
+						<code class="text-xs">twikooConfig.envId</code>。
+					</p>
+					<ul class="text-50 text-xs leading-relaxed space-y-1 list-disc pl-4">
+						<li>
+							详细步骤见
+							<code class="text-xs">docs/DEPLOY.md</code>
+							「Twikoo 评论」一节
+						</li>
+						<li>
+							官方文档：
+							<a
+								class="link text-[var(--primary)] font-medium"
+								href="https://twikoo.js.org/"
+								target="_blank"
+								rel="noopener"
+							>
+								twikoo.js.org
+							</a>
+						</li>
+						<li>配置完成并重新部署后，本卡片会自动变成评论框</li>
+					</ul>
+				</div>
+			</div>
+		</section>
+	)
+}
+
+{/* ========== Giscus 兼容（twikoo 关闭时可选） ========== */}
+{
+	giscusReady && (
 		<section
 			class="card-base rounded-[var(--radius-large)] overflow-hidden p-4 md:p-6 mb-4 onload-animation comment-section"
 			aria-label={i18n(I18nKey.comments)}
@@ -48,7 +184,7 @@ const showPlaceholder = giscusConfig.enable && !fullyConfigured;
 }
 
 {
-	showPlaceholder && (
+	giscusPlaceholder && (
 		<section
 			class="card-base rounded-[var(--radius-large)] overflow-hidden p-5 md:p-6 mb-4 onload-animation comment-placeholder"
 			aria-label={i18n(I18nKey.comments)}
@@ -58,32 +194,12 @@ const showPlaceholder = giscusConfig.enable && !fullyConfigured;
 					<Icon name="material-symbols:chat-bubble-outline-rounded" class="text-[1.35rem]" />
 				</div>
 				<div class="min-w-0 flex-1">
-					<h2 class="text-lg font-bold text-90 mb-1.5 flex items-center gap-2">
-						{i18n(I18nKey.comments)}
-						<span class="text-xs font-medium px-2 py-0.5 rounded-full bg-[var(--btn-regular-bg)] text-50">
-							待开启
-						</span>
-					</h2>
-					<p class="text-75 text-sm leading-relaxed mb-3">
-						评论基于 GitHub Discussions（Giscus）。仓库推送并开启 Discussions 后，在
-						<a
-							class="link text-[var(--primary)] font-medium"
-							href="https://giscus.app/zh-CN"
-							target="_blank"
-							rel="noopener"
-						>
-							giscus.app
-						</a>
-						获取 <code class="text-xs">repoId</code> / <code class="text-xs">categoryId</code>
-						，填入 <code class="text-xs">src/config.ts</code> 的 <code class="text-xs">giscusConfig</code> 即可。
+					<h2 class="text-lg font-bold text-90 mb-1.5">{i18n(I18nKey.comments)}</h2>
+					<p class="text-75 text-sm leading-relaxed">
+						Giscus 未完整配置。建议改用 Twikoo（
+						<code class="text-xs">twikooConfig</code>
+						），无需 GitHub 登录。
 					</p>
-					<ul class="text-50 text-xs leading-relaxed space-y-1 list-disc pl-4">
-						<li>
-							目标仓库：
-							<code class="text-[var(--primary)]">{giscusConfig.repo || "未设置"}</code>
-						</li>
-						<li>详细步骤见项目 docs/DEPLOY.md 第二节</li>
-					</ul>
 				</div>
 			</div>
 		</section>
@@ -94,6 +210,24 @@ const showPlaceholder = giscusConfig.enable && !fullyConfigured;
 	.comment-section :global(.giscus),
 	.comment-section :global(.giscus-frame) {
 		width: 100%;
+	}
+	.twikoo-host {
+		min-height: 4rem;
+	}
+	/* Twikoo 主题色贴近站点 */
+	.comment-section :global(.tk-comments) {
+		font-size: 0.92rem;
+	}
+	.comment-section :global(.tk-submit .tk-avatar),
+	.comment-section :global(.tk-avatar) {
+		border-radius: 0.75rem !important;
+	}
+	.comment-section :global(.tk-input) {
+		border-radius: 0.75rem !important;
+	}
+	.comment-section :global(.tk-send) {
+		border-radius: 0.65rem !important;
+		background: var(--primary) !important;
 	}
 	.comment-placeholder code {
 		font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
