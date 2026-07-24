@@ -26,6 +26,7 @@
 - [x] 动态大海 Banner（静态海报首屏占位，视频就绪后淡入）
 - [x] 华语金曲电台：圆盘 FAB + 完整面板 + **精简模式**
 - [x] **Twikoo 评论**（无需 GitHub 登录）
+- [x] **写作台** `/admin/`（Sveltia CMS，仅作者）
 - [x] 移动端欢迎卡内嵌今日一言（打字机短句）
 - [x] 移动端分类 / 标签单行折叠展开
 - [x] 不蒜子统计、站点天数、开场图、阅读进度等
@@ -111,6 +112,12 @@ lang: zh_CN   # 仅当与站点语言不同时需要
 | `pnpm check` | Astro / 类型检查 |
 
 ---
+
+## ✍️ 写作台
+
+PC 访问：`/admin/`（生产：https://blog.hhq688.com/admin/）
+
+GitHub 登录后编辑 Markdown 文章并保存到仓库，自动触发部署。配置见 [DEPLOY.md](./DEPLOY.md)。
 
 ## 📄 许可
 

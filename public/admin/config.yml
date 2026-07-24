@@ -1,0 +1,112 @@
+# Sveltia CMS 配置 · 清哥的小屋
+# 文档：https://sveltiacms.app/en/docs/start
+# 访问：https://blog.hhq688.com/admin/
+
+backend:
+  name: github
+  repo: HHQ-666/qingge-blog
+  branch: main
+  # OAuth 代理（默认使用 Netlify 兼容代理，见 DEPLOY.md）
+  # 若使用自建 sveltia-cms-auth，取消注释并填写：
+  # base_url: https://your-auth-worker.example.com
+
+# 本地预览（可选）：pnpm dev 时可用
+local_backend: true
+
+# 媒体上传到 public/media/uploads，前台路径 /media/uploads/...
+media_folder: public/media/uploads
+public_folder: /media/uploads
+
+locale: zh_Hans
+
+# 站点 URL（用于预览链接）
+site_url: https://blog.hhq688.com
+display_url: https://blog.hhq688.com
+logo_url: /favicon/favicon-light-192.png
+
+slug:
+  encoding: unicode
+  clean_accents: false
+  sanitize_replacement: "-"
+
+collections:
+  - name: posts
+    label: 文章
+    label_singular: 文章
+    description: 写入 src/content/posts，保存后提交到 GitHub，Vercel 自动构建上线。
+    folder: src/content/posts
+    create: true
+    delete: true
+    # 文件名：标题 slug + 时间戳，避免中文/重复冲突
+    slug: "{{slug}}-{{year}}{{month}}{{day}}{{hour}}{{minute}}"
+    extension: md
+    format: frontmatter
+    # 预览路径（与 Astro 路由一致：去掉扩展名）
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields:
+      - name: title
+        label: 标题
+        widget: string
+        required: true
+
+      - name: published
+        label: 发布日期
+        widget: datetime
+        date_format: YYYY-MM-DD
+        time_format: false
+        format: YYYY-MM-DD
+        required: true
+
+      - name: description
+        label: 简介
+        widget: text
+        required: false
+        hint: 列表卡片与 SEO 摘要
+
+      - name: image
+        label: 封面图
+        widget: image
+        required: false
+        allow_multiple: false
+        choose_url: true
+        media_folder: public/media/uploads
+        public_folder: /media/uploads
+        hint: 可上传或填相对路径；留空则无封面
+
+      - name: category
+        label: 分类
+        widget: string
+        required: false
+        hint: 例如 CSS / JavaScript / Vue / 前端 / 面试；新分类直接输入即可
+
+      - name: tags
+        label: 标签
+        widget: list
+        required: false
+        allow_add: true
+        field:
+          name: tag
+          label: 标签
+          widget: string
+
+      - name: draft
+        label: 草稿
+        widget: boolean
+        default: false
+        hint: 勾选后前台不展示（Astro draft）
+
+      - name: lang
+        label: 语言
+        widget: select
+        default: zh_CN
+        options:
+          - { label: 简体中文, value: zh_CN }
+          - { label: English, value: en }
+          - { label: 日本語, value: ja }
+        required: false
+
+      - name: body
+        label: 正文
+        widget: markdown
+        required: true
+        hint: 支持 Markdown；代码块、列表等

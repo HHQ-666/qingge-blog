@@ -206,3 +206,71 @@ pnpm new-post <filename>  # 新建文章
 - `src/components/widget/MobileHomeWidgets.astro`
 - `src/components/fun/Busuanzi.astro`
 
+---
+
+## 八、写作台（Sveltia CMS）
+
+PC 后台：[`/admin/`](https://blog.hhq688.com/admin/)  
+配置：[`public/admin/config.yml`](../public/admin/config.yml)  
+入口页：[`public/admin/index.html`](../public/admin/index.html)
+
+### 功能
+
+- 仅 **GitHub 登录** 且对仓库 `HHQ-666/qingge-blog` 有写权限的人可进入（即你自己）
+- 新建/编辑 `src/content/posts/*.md`，保存即 commit 到 `main`
+- Vercel 自动构建后上线
+- 封面上传目录：`public/media/uploads/`
+
+### 启用 GitHub OAuth（首次必做）
+
+CMS 需要 OAuth 才能「Login with GitHub」。任选其一：
+
+#### 方式 1：Netlify Identity 兼容代理（常见）
+
+1. 在 [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
+2. 填写：
+   - Application name：`qingge-blog-cms`
+   - Homepage URL：`https://blog.hhq688.com`
+   - Authorization callback URL：按你使用的代理文档填写（若用 Netlify CMS OAuth 代理，常见为代理提供的 callback）
+3. 创建后得到 **Client ID** / **Client Secret**
+4. 部署一个 OAuth 代理（任选）：
+   - [sveltia/sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth)（Cloudflare Workers，推荐）
+   - 或 Decap 文档列出的第三方 External OAuth Client
+5. 在 `public/admin/config.yml` 的 `backend` 下设置：
+
+```yaml
+backend:
+  name: github
+  repo: HHQ-666/qingge-blog
+  branch: main
+  base_url: https://你的-oauth-代理地址
+```
+
+6. 重新部署博客后，打开 `/admin/` → Login with GitHub
+
+#### 方式 2：Personal Access Token（最快试用）
+
+部分 Sveltia 版本支持 **用 Token 登录**（无需 OAuth App）：
+
+1. GitHub → Settings → Developer settings → **Personal access tokens**  
+2. 生成 token，勾选 `repo` 权限  
+3. `/admin/` 登录页若有 “Sign in with token”，粘贴 token  
+
+> Token 等同仓库写权限，请勿泄露；用完可删除。
+
+### 本地调试 CMS
+
+```bash
+pnpm dev
+# 另开终端（可选，Sveltia local_backend）
+npx @sveltia/cms@latest  # 若文档要求 proxy，按官方本地代理说明
+```
+
+打开 http://localhost:4321/admin/  
+`config.yml` 中 `local_backend: true` 时，可用本地代理直接写文件系统（按 Sveltia 当前文档启动 proxy）。
+
+### 安全说明
+
+- 不要把 `/admin` 链到全站导航给所有人（可仅收藏书签）
+- 真正权限靠 **GitHub 仓库写权限**，不是靠隐藏链接
+- OAuth Secret / PAT 不要提交进仓库

@@ -1,0 +1,2 @@
+# 防止 public/media/uploads 被 git 忽略空目录
+# 上传的图片会进这个目录，经 CMS 提交到仓库
