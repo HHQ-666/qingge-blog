@@ -5,7 +5,6 @@ import { url } from "../utils/url-utils";
 
 const banner = siteConfig.banner;
 const videoEnabled = Boolean(banner.video?.enable && banner.video?.src);
-const staticSrc = banner.src;
 const position = banner.position || "center";
 // 走 base path，避免部署在子路径时 404
 const videoSrc = banner.video?.src ? url(banner.video.src) : "";
@@ -15,6 +14,8 @@ const nativePoster = banner.video?.posterPublic
 	: banner.video?.src
 		? url(String(banner.video.src).replace(/\.mp4$/i, "-poster.jpg"))
 		: "";
+// 视频 poster 同时作为首屏静态图：加载、失败与自动播放受限时都不留空白。
+const staticSrc = nativePoster || banner.video?.poster || banner.src;
 ---
 
 {
@@ -172,10 +173,7 @@ const nativePoster = banner.video?.posterPublic
 	.banner-media {
 		opacity: 1;
 		transform: scale(1);
-		background: oklch(0.88 0.03 var(--hue));
-	}
-	:global(.dark) .banner-media {
-		background: oklch(0.28 0.03 var(--hue));
+		background: var(--page-bg);
 	}
 	.banner-media__static {
 		z-index: 1;
