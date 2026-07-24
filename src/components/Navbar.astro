@@ -126,7 +126,7 @@ loadButtonScript();
 
 	function unlocked() {
 		try {
-			return secret && localStorage.getItem(KEY) === secret;
+			return Boolean(secret && localStorage.getItem(KEY) === secret);
 		} catch (e) {
 			return false;
 		}
