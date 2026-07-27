@@ -13,6 +13,12 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "biomejs.biome"
   },
+  "[astro]": {
+    "editor.defaultFormatter": "astro-build.astro-vscode"
+  },
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "quickfix.biome": "always",
