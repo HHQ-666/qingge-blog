@@ -12,7 +12,7 @@ lang: "zh_CN"
 #### 1. 弹窗作为子组件
 
 父组件通过点击事件来打开弹窗，然而，在弹窗中点击窗外之外的空白区域或者右上角叉时候一直报错:  
-![![在这里插入图片描述](https://img-blog.csdnimg.cn/2021032314353958.p](https://i-blog.csdnimg.cn/blog_migrate/c01771cffeae695fcf352fefd68085a5.png)  
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/elementui-el-dialog-作为子组件使用关闭时报错-115122783/1e749d7112dd36f2.png)  
 翻译：**避免直接改变一个道具，因为当父组件重新渲染时，这个值会被覆盖。相反，使用基于道具值的数据或计算属性。正在发生突变的道具:“editVisible”**
 
 #### 2. 原因分析

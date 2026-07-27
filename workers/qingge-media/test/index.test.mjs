@@ -40,5 +40,6 @@ test("returns object metadata and immutable cache headers", async () => {
   assert.equal(response.status, 200);
   assert.equal(response.headers.get("content-type"), "image/png");
   assert.equal(response.headers.get("cache-control"), "public, max-age=31536000, immutable");
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.equal(await response.text(), "image-bytes");
 });

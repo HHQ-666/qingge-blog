@@ -116,6 +116,6 @@ onRefresh () { // 下拉刷新
 
 **ps**  
 今天才发现vant 的list组件 对常见的使用问题下面有提示、  
-![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/af7d98fbe6e5cb6d94d2e1d9fef87fa0.png)
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue使用vant的list组件使用-106358727/11b17ecc20925e05.png)
 
 好了总结完毕！有什么问题可以留言一起交流下。

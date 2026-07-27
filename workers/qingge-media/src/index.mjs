@@ -1,8 +1,12 @@
 function objectKey(request) {
-  const key = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, "");
+  try {
+    const key = decodeURIComponent(new URL(request.url).pathname).replace(/^\/+/, "");
 
-  if (!key || key.split("/").includes("..")) return null;
-  return key;
+    if (!key || key.split("/").includes("..")) return null;
+    return key;
+  } catch {
+    return null;
+  }
 }
 
 export async function handleRequest(request, media) {
@@ -23,6 +27,7 @@ export async function handleRequest(request, media) {
   object.writeHttpMetadata(headers);
   headers.set("etag", object.httpEtag);
   headers.set("cache-control", "public, max-age=31536000, immutable");
+  headers.set("x-content-type-options", "nosniff");
 
   return new Response(request.method === "HEAD" ? null : object.body, {
     status: 200,

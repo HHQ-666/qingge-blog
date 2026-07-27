@@ -117,7 +117,7 @@ export default {
 ```
 
 **效果图**  
-![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/7b4276093194f42a89cc918bc08f44d3.png)
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/elementui-el-pagination-分页组件封装-115900338/b10157ead32e8ed9.png)
 
 ---
 

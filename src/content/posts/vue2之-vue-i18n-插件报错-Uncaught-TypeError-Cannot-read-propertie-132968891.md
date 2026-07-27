@@ -15,7 +15,7 @@ lang: "zh_CN"
 
 ### 2. 问题
 
-![报错](https://i-blog.csdnimg.cn/blog_migrate/f0a7e3187bc5ad6f54f41c21a57249ff.jpeg#pic_center)
+![报错](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue2之-vue-i18n-插件报错-Uncaught-TypeError-Cannot-read-propertie-132968891/f24c82a75a5d02c8.jpg)
 
 ### 3. 解决过程
 
