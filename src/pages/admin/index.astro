@@ -247,8 +247,7 @@ export const prerender = true;
 				var observer = null;
 
 				function forceCenter(el) {
-					if (!el || el.dataset.centered === "1") return;
-					el.dataset.centered = "1";
+					if (!el) return;
 					// 运行时再钉一次，防止 Sveltia 后续改写 style
 					el.style.setProperty("position", "fixed", "important");
 					el.style.setProperty("inset", "0", "important");
@@ -267,16 +266,32 @@ export const prerender = true;
 					el.style.setProperty("z-index", "100", "important");
 				}
 
+				function nativeLoaderContainer() {
+					var elements = document.querySelectorAll(".sui.app-shell p, .sui.app-shell div, .sui.app-shell span");
+					for (var i = 0; i < elements.length; i++) {
+						var element = elements[i];
+						var text = (element.textContent || "").trim();
+						if (text.indexOf("Loading Site Data") === -1) continue;
+
+						var childHasLoaderText = false;
+						for (var j = 0; j < element.children.length; j++) {
+							if ((element.children[j].textContent || "").indexOf("Loading Site Data") !== -1) {
+								childHasLoaderText = true;
+								break;
+							}
+						}
+						if (!childHasLoaderText) return element.closest(".container");
+					}
+					return null;
+				}
+
 				function scanCenter() {
-					var nodes = document.querySelectorAll(
-						'.sui.app-shell > .container, div.container[role="none"]',
-					);
-					for (var i = 0; i < nodes.length; i++) forceCenter(nodes[i]);
+					forceCenter(nativeLoaderContainer());
 
 					// 根节点高度兜底
 					var roots = document.querySelectorAll("body > div:not(#admin-boot), #nc-root, .sui.app-shell");
-					for (var j = 0; j < roots.length; j++) {
-						var r = roots[j];
+					for (var k = 0; k < roots.length; k++) {
+						var r = roots[k];
 						r.style.setProperty("position", "relative", "important");
 						r.style.setProperty("min-height", "100dvh", "important");
 						r.style.setProperty("height", "100dvh", "important");
@@ -285,6 +300,7 @@ export const prerender = true;
 				}
 
 				function cmsReady() {
+					if (nativeLoaderContainer()) return false;
 					var shell = document.querySelector(".sui.app-shell");
 					return Boolean(
 						shell &&
@@ -321,9 +337,6 @@ export const prerender = true;
 				// 持续纠正居中（Sveltia 挂载后 DOM 会变）
 				scanCenter();
 				centerTimer = setInterval(scanCenter, 200);
-				setTimeout(function () {
-					clearInterval(centerTimer);
-				}, 20000);
 
 				if (typeof MutationObserver !== "undefined") {
 					observer = new MutationObserver(function () {
