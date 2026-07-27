@@ -84,6 +84,8 @@ export type ProfileConfig = {
 		name: string;
 		url: string;
 		icon: string;
+		/** 若提供，点击展示二维码弹层（如微信公众号） */
+		qr?: string;
 	}[];
 };
 

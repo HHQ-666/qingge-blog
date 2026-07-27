@@ -1,3 +1,12 @@
+---
+/**
+ * 写作台（Sveltia CMS）
+ * 使用独立页面避免被 [...page] 通配路由拦截。
+ * 配置：/admin/config.yml
+ */
+export const prerender = true;
+---
+
 <!doctype html>
 <html lang="zh-CN">
 	<head>
@@ -228,8 +237,8 @@
 		</div>
 
 		<!-- 勿加 type="module"（Sveltia 文档要求） -->
-		<script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
-		<script>
+		<script is:inline src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+		<script is:inline>
 			(function () {
 				var boot = document.getElementById("admin-boot");
 				var centerTimer = 0;

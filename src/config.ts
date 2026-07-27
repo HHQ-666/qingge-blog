@@ -117,6 +117,20 @@ export const profileConfig: ProfileConfig = {
 			icon: "fa6-solid:blog",
 			url: "https://blog.csdn.net/weixin_44980732",
 		},
+		{
+			name: "抖音",
+			icon: "fa6-brands:tiktok",
+			// 抖音号：HHQ20250621（睁眼看世界）— 用二维码，避免跳搜索页出现大量同名用户
+			url: "#douyin-qr",
+			qr: "/media/douyin-qr.png",
+		},
+		{
+			name: "公众号",
+			icon: "fa6-brands:weixin",
+			// 点击弹出二维码
+			url: "#wechat-official",
+			qr: "/media/wechat-official-qr.png",
+		},
 	],
 };
 
@@ -129,6 +143,21 @@ export const licenseConfig: LicenseConfig = {
 export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	// Note: Some styles (such as background color) are being overridden, see the astro.config.mjs file.
 	theme: "github-light",
+};
+
+
+/**
+ * 作者写作台入口（仅自己可见）
+ * - 浏览器控制台执行：localStorage.setItem("qingge-author","你的口令") 后刷新
+ * - 或在欢迎区小屋图标上连点 5 次解锁
+ * - 解锁后仅显示顶部写作图标（新窗口打开）
+ * 真正写权限仍靠 GitHub，口令只控制入口显示
+ */
+export const authorGate = {
+	/** 与 localStorage 中 qingge-author 比对；改成你自己的口令 */
+	secret: "qingge-write",
+	/** 写作台路径 */
+	adminPath: "/admin/",
 };
 
 /**

@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { navBarConfig, siteConfig } from "../config";
+import { authorGate, navBarConfig, siteConfig } from "../config";
 import { LinkPresets } from "../constants/link-presets";
 import { LinkPreset, type NavBarLink } from "../types/config";
 import { url } from "../utils/url-utils";
@@ -10,6 +10,7 @@ import DisplaySettings from "./widget/DisplaySettings.svelte";
 import NavMenuPanel from "./widget/NavMenuPanel.astro";
 
 const className = Astro.props.class;
+const adminHref = url(authorGate.adminPath);
 
 let links: NavBarLink[] = navBarConfig.links.map(
 	(item: NavBarLink | LinkPreset): NavBarLink => {
@@ -20,18 +21,18 @@ let links: NavBarLink[] = navBarConfig.links.map(
 	},
 );
 ---
-<div id="navbar" class="z-50 onload-animation">
+<div id="navbar" class="z-50 onload-animation" data-author-secret={authorGate.secret}>
     <div class="absolute h-8 left-0 right-0 -top-8 bg-[var(--card-bg)] transition"></div> <!-- used for onload animation -->
     <div class:list={[
         className,
         "card-base !overflow-visible max-w-[var(--page-width)] h-[3.75rem] sm:h-[4.5rem] !rounded-t-none mx-auto flex items-center justify-between px-2.5 sm:px-4 gap-1"]}>
-        <a href={url('/')} class="btn-plain scale-animation rounded-lg h-11 sm:h-[3.25rem] px-2.5 sm:px-5 font-bold active:scale-95 min-w-0 shrink">
+        <a href={url('/')} class="btn-plain scale-animation rounded-lg h-11 sm:h-[3.25rem] px-2.5 sm:px-5 font-bold active:scale-95 min-w-0 shrink" title={siteConfig.title}>
             <div class="flex flex-row text-[var(--primary)] items-center text-sm sm:text-md min-w-0">
                 <Icon name="material-symbols:cottage-rounded" class="text-[1.5rem] sm:text-[1.75rem] mb-0.5 sm:mb-1 mr-1.5 sm:mr-2 shrink-0" />
                 <span class="truncate max-w-[9.5rem] xs:max-w-none">{siteConfig.title}</span>
             </div>
         </a>
-        <div class="hidden md:flex">
+        <div class="hidden md:flex items-center">
             {links.map((l) => {
                 return <a aria-label={l.name} href={l.external ? l.url : url(l.url)} target={l.external ? "_blank" : null}
                           class="btn-plain scale-animation rounded-lg h-11 font-bold px-5 active:scale-95"
@@ -44,6 +45,19 @@ let links: NavBarLink[] = navBarConfig.links.map(
             })}
         </div>
         <div class="flex items-center shrink-0">
+            <!-- 作者解锁后显示：写作图标（移动端也可见） -->
+            <a
+                id="author-write-icon"
+                href={adminHref}
+                class="btn-plain scale-animation rounded-lg h-10 w-10 sm:h-11 sm:w-11 active:scale-90 hidden text-[var(--primary)]"
+                title="写作台（新窗口）"
+                aria-label="写作台"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-no-swup
+            >
+                <Icon name="material-symbols:edit-document-outline-rounded" class="text-[1.15rem] sm:text-[1.25rem]" />
+            </a>
             <!--<SearchPanel client:load>-->
             <Search client:only="svelte"></Search>
             {!siteConfig.themeColor.fixed && (
@@ -102,6 +116,42 @@ function loadButtonScript() {
 }
 
 loadButtonScript();
+
+// —— 作者写作台入口（仅本地解锁后可见）——
+(function () {
+	var nav = document.getElementById("navbar");
+	if (!nav) return;
+	var secret = nav.getAttribute("data-author-secret") || "";
+	var KEY = "qingge-author";
+
+	function unlocked() {
+		try {
+			return Boolean(secret && localStorage.getItem(KEY) === secret);
+		} catch (e) {
+			return false;
+		}
+	}
+
+	function showEntry(on: boolean) {
+		var icon = document.getElementById("author-write-icon");
+		if (icon) icon.classList.toggle("hidden", !on);
+	}
+
+	// 1) 已解锁则显示
+	showEntry(unlocked());
+	document.addEventListener("author:unlocked", function () {
+		showEntry(true);
+	});
+
+	// 2) 控制台提示（仅 dev）
+	if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+		console.info(
+			'[写作台] 欢迎区小屋图标连点5次；或 localStorage.setItem("qingge-author","' +
+				secret +
+				'") 后刷新',
+		);
+	}
+})();
 </script>
 
 {import.meta.env.PROD && <script is:inline define:vars={{scriptUrl: url('/pagefind/pagefind.js')}}>

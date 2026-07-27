@@ -67,7 +67,6 @@ collections:
         label: 封面图
         widget: image
         required: false
-        allow_multiple: false
         choose_url: true
         media_folder: public/media/uploads
         public_folder: /media/uploads

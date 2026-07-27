@@ -5,8 +5,27 @@ import { url } from "../../utils/url-utils";
 import ImageWrapper from "../misc/ImageWrapper.astro";
 
 const config = profileConfig;
+const qrLinks = config.links.filter((item) => !!item.qr);
+
+function qrDesc(name: string) {
+	if (name.includes("抖音")) return "抖音扫一扫 · 关注「睁眼看世界」";
+	if (name.includes("公众号") || name.includes("微信")) return "微信扫一扫 · 关注公众号";
+	return "扫一扫关注";
+}
+
+function qrHint(name: string) {
+	if (name.includes("抖音")) return "抖音号 HHQ20250621 · 睁眼看世界";
+	if (name.includes("公众号") || name.includes("微信")) return "长按或扫码关注 · 清哥的小屋";
+	return "扫码关注";
+}
+
+function qrTheme(name: string) {
+	if (name.includes("抖音")) return "douyin";
+	if (name.includes("公众号") || name.includes("微信")) return "wechat";
+	return "default";
+}
 ---
-<div class="card-base p-3 sm:p-3 profile-card">
+<div class="card-base p-3 sm:p-3 profile-card" id="profile-card">
 	<a
 		aria-label="Go to About Page"
 		href={url("/about/")}
@@ -37,35 +56,261 @@ const config = profileConfig;
 		<div class="flex flex-wrap gap-2 justify-center mb-1">
 			{
 				config.links.length > 1 &&
-					config.links.map((item) => (
-						<a
-							rel="me"
-							aria-label={item.name}
-							href={item.url}
-							target="_blank"
-							class="btn-regular rounded-lg h-9 w-9 sm:h-10 sm:w-10 active:scale-90"
-						>
-							<Icon name={item.icon} class="text-[1.35rem] sm:text-[1.5rem]" />
-						</a>
-					))
+					config.links.map((item) =>
+						item.qr ? (
+							<button
+								type="button"
+								class="btn-regular rounded-lg h-9 w-9 sm:h-10 sm:w-10 active:scale-90 profile-qr-trigger"
+								aria-label={`${item.name}二维码`}
+								title={`${item.name} · 扫码关注`}
+								data-qr-src={item.qr}
+								data-qr-title={item.name}
+								data-qr-desc={qrDesc(item.name)}
+								data-qr-hint={qrHint(item.name)}
+								data-qr-theme={qrTheme(item.name)}
+							>
+								<Icon name={item.icon} class="text-[1.35rem] sm:text-[1.5rem]" />
+							</button>
+						) : (
+							<a
+								rel="me"
+								aria-label={item.name}
+								href={item.url}
+								target="_blank"
+								class="btn-regular rounded-lg h-9 w-9 sm:h-10 sm:w-10 active:scale-90"
+								title={item.name}
+							>
+								<Icon name={item.icon} class="text-[1.35rem] sm:text-[1.5rem]" />
+							</a>
+						),
+					)
 			}
 			{
-				config.links.length == 1 && (
-					<a
-						rel="me"
-						aria-label={config.links[0].name}
-						href={config.links[0].url}
-						target="_blank"
-						class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95"
-					>
-						<Icon name={config.links[0].icon} class="text-[1.5rem]" />
-						{config.links[0].name}
-					</a>
-				)
+				config.links.length == 1 &&
+					(config.links[0].qr ? (
+						<button
+							type="button"
+							class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95 profile-qr-trigger"
+							aria-label={`${config.links[0].name}二维码`}
+							data-qr-src={config.links[0].qr}
+							data-qr-title={config.links[0].name}
+							data-qr-desc={qrDesc(config.links[0].name)}
+							data-qr-hint={qrHint(config.links[0].name)}
+							data-qr-theme={qrTheme(config.links[0].name)}
+						>
+							<Icon name={config.links[0].icon} class="text-[1.5rem]" />
+							{config.links[0].name}
+						</button>
+					) : (
+						<a
+							rel="me"
+							aria-label={config.links[0].name}
+							href={config.links[0].url}
+							target="_blank"
+							class="btn-regular rounded-lg h-10 gap-2 px-3 font-bold active:scale-95"
+						>
+							<Icon name={config.links[0].icon} class="text-[1.5rem]" />
+							{config.links[0].name}
+						</a>
+					))
 			}
 		</div>
 	</div>
 </div>
+
+{
+	/* 模板放在页面内，打开时 JS 会挪到 document.body，避免侧栏 overflow 裁切 */
+	qrLinks.length > 0 && (
+		<template id="profile-qr-modal-template">
+			<div id="profile-qr-modal" class="profile-qr-modal" aria-hidden="true">
+				<button type="button" class="profile-qr-modal__backdrop" aria-label="关闭" data-qr-close></button>
+				<div
+					class="profile-qr-modal__panel"
+					role="dialog"
+					aria-modal="true"
+					aria-labelledby="profile-qr-title"
+				>
+					<div class="profile-qr-modal__shine" aria-hidden="true"></div>
+					<button type="button" class="profile-qr-modal__close" aria-label="关闭" data-qr-close>
+						<span aria-hidden="true">×</span>
+					</button>
+					<div class="profile-qr-modal__badge" id="profile-qr-badge" data-theme="wechat" aria-hidden="true">
+						<!-- icon injected by JS -->
+					</div>
+					<div id="profile-qr-title" class="profile-qr-modal__title">扫码关注</div>
+					<div id="profile-qr-desc" class="profile-qr-modal__desc">扫一扫</div>
+					<div class="profile-qr-modal__frame" id="profile-qr-frame" data-theme="wechat">
+						<img
+							id="profile-qr-image"
+							src={qrLinks[0].qr}
+							alt="二维码"
+							width="240"
+							height="240"
+							decoding="async"
+						/>
+					</div>
+					<div id="profile-qr-hint" class="profile-qr-modal__hint">扫码关注</div>
+				</div>
+			</div>
+		</template>
+	)
+}
+
+<script is:inline>
+	(function () {
+		var ICONS = {
+			wechat:
+				'<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M9.5 4C5.91 4 3 6.47 3 9.5c0 1.72.9 3.26 2.31 4.31L4.5 16.5l2.78-1.39c.7.22 1.44.35 2.22.35.2 0 .4 0 .59-.02C9.77 14.6 9.5 13.59 9.5 12.5 9.5 9.46 12.36 7 15.9 7c.18 0 .36 0 .54.02C15.66 5.23 12.87 4 9.5 4zm-2.25 2.75a.88.88 0 1 1 0 1.75.88.88 0 0 1 0-1.75zm4.5 0a.88.88 0 1 1 0 1.75.88.88 0 0 1 0-1.75zM15.9 8.25c-2.85 0-5.15 1.9-5.15 4.25S13.05 16.75 15.9 16.75c.55 0 1.08-.08 1.57-.22l2.03 1.02-.55-1.85c1.05-.85 1.7-2.05 1.7-3.4 0-2.35-2.3-4.05-5.15-4.05zm-1.65 2.5a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5zm3.3 0a.75.75 0 1 1 0 1.5.75.75 0 0 1 0-1.5z"/></svg>',
+			douyin:
+				'<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15.2a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.73a8.2 8.2 0 0 0 4.76 1.52V6.84a4.84 4.84 0 0 1-1-.15z"/></svg>',
+			default:
+				'<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M3 11h8V3H3v8zm2-6h4v4H5V5zm8-2v8h8V3h-8zm6 6h-4V5h4v4zM3 21h8v-8H3v8zm2-6h4v4H5v-4zm13 2h-2v-2h-2v2h-2v2h2v2h2v-2h2v-2z"/></svg>',
+		};
+
+		function ensureModal() {
+			var existing = document.getElementById("profile-qr-modal");
+			if (existing) {
+				// 保证在 body 下，不被侧栏 overflow 裁切
+				if (existing.parentElement !== document.body) {
+					document.body.appendChild(existing);
+				}
+				return existing;
+			}
+			var tpl = document.getElementById("profile-qr-modal-template");
+			if (!tpl || !tpl.content) return null;
+			var node = tpl.content.cloneNode(true);
+			document.body.appendChild(node);
+			return document.getElementById("profile-qr-modal");
+		}
+
+		function boot() {
+			// 每次 swup 页面切换后重新绑定触发器，但 modal 只挂一份
+			if (document.documentElement.dataset.profileQrGlobal === "1") {
+				// 仍确保 modal 在 body
+				ensureModal();
+				return;
+			}
+			document.documentElement.dataset.profileQrGlobal = "1";
+
+			var lastFocus = null;
+
+			function openModal(btn) {
+				var modal = ensureModal();
+				if (!modal) return;
+				lastFocus = btn || document.activeElement;
+
+				var src = btn && btn.getAttribute("data-qr-src");
+				var title = (btn && btn.getAttribute("data-qr-title")) || "扫码关注";
+				var desc = (btn && btn.getAttribute("data-qr-desc")) || "扫一扫";
+				var hint = (btn && btn.getAttribute("data-qr-hint")) || "扫码关注";
+				var theme = (btn && btn.getAttribute("data-qr-theme")) || "default";
+
+				var titleEl = document.getElementById("profile-qr-title");
+				var descEl = document.getElementById("profile-qr-desc");
+				var hintEl = document.getElementById("profile-qr-hint");
+				var imgEl = document.getElementById("profile-qr-image");
+				var badge = document.getElementById("profile-qr-badge");
+				var frame = document.getElementById("profile-qr-frame");
+
+				if (imgEl && src) {
+					imgEl.src = src;
+					imgEl.alt = title + "二维码";
+				}
+				if (titleEl) titleEl.textContent = title;
+				if (descEl) descEl.textContent = desc;
+				if (hintEl) hintEl.textContent = hint;
+				if (badge) {
+					badge.setAttribute("data-theme", theme);
+					badge.innerHTML = ICONS[theme] || ICONS.default;
+				}
+				if (frame) frame.setAttribute("data-theme", theme);
+
+				modal.hidden = false;
+				modal.setAttribute("aria-hidden", "false");
+				// 强制全屏 fixed 样式，防止被祖先 transform/overflow 影响
+				modal.style.cssText =
+					"position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:1.25rem;";
+				requestAnimationFrame(function () {
+					modal.classList.add("is-open");
+				});
+				document.documentElement.classList.add("profile-qr-lock");
+			}
+
+			function closeModal() {
+				var modal = document.getElementById("profile-qr-modal");
+				if (!modal || !modal.classList.contains("is-open")) return;
+				modal.classList.remove("is-open");
+				modal.setAttribute("aria-hidden", "true");
+				document.documentElement.classList.remove("profile-qr-lock");
+				setTimeout(function () {
+					if (!modal.classList.contains("is-open")) {
+						modal.hidden = true;
+						modal.style.display = "none";
+					}
+				}, 220);
+				if (lastFocus && typeof lastFocus.focus === "function") {
+					try {
+						lastFocus.focus();
+					} catch (e) {}
+				}
+			}
+
+			document.addEventListener("click", function (e) {
+				var t = e.target;
+				if (!t || !t.closest) return;
+				var trigger = t.closest(".profile-qr-trigger");
+				if (trigger) {
+					e.preventDefault();
+					e.stopPropagation();
+					openModal(trigger);
+					return;
+				}
+				if (t.closest("[data-qr-close]")) {
+					e.preventDefault();
+					closeModal();
+				}
+			});
+
+			document.addEventListener("keydown", function (e) {
+				if (e.key === "Escape") closeModal();
+			});
+
+			// hash 直达
+			function openFromHash() {
+				var hash = location.hash;
+				if (!hash) return;
+				var map = {
+					"#wechat-official": "wechat",
+					"#wechat-qr": "wechat",
+					"#douyin-qr": "douyin",
+				};
+				var theme = map[hash];
+				if (!theme) return;
+				var btn = document.querySelector('.profile-qr-trigger[data-qr-theme="' + theme + '"]');
+				if (btn) openModal(btn);
+			}
+			openFromHash();
+			window.addEventListener("hashchange", openFromHash);
+		}
+
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", boot);
+		} else {
+			boot();
+		}
+		document.addEventListener("swup:page:view", function () {
+			// 页面切换后 modal 可能被卸载，清标记后重建绑定
+			var modal = document.getElementById("profile-qr-modal");
+			if (modal && modal.parentElement === document.body) {
+				// 保留 body 上的 modal
+			} else {
+				document.documentElement.dataset.profileQrGlobal = "";
+			}
+			// 确保触发器可用：重新 ensure
+			ensureModal();
+		});
+	})();
+</script>
 
 <style>
 	.profile-card__avatar {
@@ -115,6 +360,209 @@ const config = profileConfig;
 		}
 		.profile-card__meta .mb-2\.5 {
 			margin-bottom: 0.55rem;
+		}
+	}
+</style>
+
+<style is:global>
+	html.profile-qr-lock,
+	html.profile-qr-lock body {
+		overflow: hidden !important;
+	}
+
+	/* 挂到 body，不受侧栏 overflow 影响 */
+	#profile-qr-modal.profile-qr-modal {
+		position: fixed !important;
+		inset: 0 !important;
+		z-index: 99999 !important;
+		display: none;
+		place-items: center;
+		padding: 1.25rem;
+		margin: 0 !important;
+		width: 100vw !important;
+		height: 100dvh !important;
+		max-width: none !important;
+		max-height: none !important;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transition:
+			opacity 0.22s ease,
+			visibility 0.22s ease;
+	}
+	#profile-qr-modal.profile-qr-modal.is-open {
+		display: grid !important;
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+	}
+
+	.profile-qr-modal__backdrop {
+		position: absolute;
+		inset: 0;
+		border: 0;
+		padding: 0;
+		margin: 0;
+		cursor: pointer;
+		background: rgba(18, 14, 12, 0.52);
+		-webkit-backdrop-filter: blur(10px) saturate(1.05);
+		backdrop-filter: blur(10px) saturate(1.05);
+	}
+
+	.profile-qr-modal__panel {
+		position: relative;
+		z-index: 1;
+		width: min(21rem, calc(100vw - 2rem));
+		padding: 1.4rem 1.3rem 1.25rem;
+		border-radius: 1.4rem;
+		text-align: center;
+		color: #2f2a25;
+		background:
+			radial-gradient(ellipse 95% 70% at 50% -10%, rgba(255, 236, 210, 0.95), transparent 60%),
+			linear-gradient(165deg, #fffdf9 0%, #ffffff 52%, #f7f1ea 100%);
+		box-shadow:
+			0 28px 70px rgba(40, 24, 12, 0.28),
+			0 0 0 1px rgba(196, 92, 38, 0.1),
+			inset 0 1px 0 rgba(255, 255, 255, 0.95);
+		transform: translateY(12px) scale(0.96);
+		transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+		overflow: hidden;
+	}
+	#profile-qr-modal.is-open .profile-qr-modal__panel {
+		transform: translateY(0) scale(1);
+	}
+
+	:root.dark .profile-qr-modal__panel {
+		color: #f4ece3;
+		background:
+			radial-gradient(ellipse 95% 70% at 50% -10%, rgba(120, 72, 28, 0.38), transparent 60%),
+			linear-gradient(165deg, #2c231c 0%, #1d1814 100%);
+		box-shadow:
+			0 28px 70px rgba(0, 0, 0, 0.5),
+			0 0 0 1px rgba(255, 200, 140, 0.08),
+			inset 0 1px 0 rgba(255, 255, 255, 0.05);
+	}
+
+	.profile-qr-modal__shine {
+		pointer-events: none;
+		position: absolute;
+		inset: -45% -25% auto;
+		height: 75%;
+		background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.38), transparent);
+		transform: rotate(-8deg);
+		opacity: 0.5;
+	}
+
+	.profile-qr-modal__close {
+		position: absolute;
+		top: 0.7rem;
+		right: 0.75rem;
+		width: 2.1rem;
+		height: 2.1rem;
+		border: 0;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.05);
+		color: inherit;
+		font-size: 1.3rem;
+		line-height: 1;
+		cursor: pointer;
+		display: grid;
+		place-items: center;
+		transition: background 0.15s ease;
+	}
+	.profile-qr-modal__close:hover {
+		background: rgba(0, 0, 0, 0.1);
+	}
+	:root.dark .profile-qr-modal__close {
+		background: rgba(255, 255, 255, 0.08);
+	}
+
+	.profile-qr-modal__badge {
+		width: 2.85rem;
+		height: 2.85rem;
+		margin: 0 auto 0.7rem;
+		border-radius: 0.95rem;
+		display: grid;
+		place-items: center;
+		color: #fff;
+		box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+	}
+	.profile-qr-modal__badge[data-theme="wechat"] {
+		background: linear-gradient(145deg, #2aae67, #07c160 55%, #06ad56);
+		box-shadow:
+			0 10px 22px rgba(7, 193, 96, 0.28),
+			inset 0 1px 0 rgba(255, 255, 255, 0.35);
+	}
+	.profile-qr-modal__badge[data-theme="douyin"] {
+		background: linear-gradient(145deg, #25f4ee 0%, #111 42%, #fe2c55 100%);
+		box-shadow:
+			0 10px 22px rgba(254, 44, 85, 0.25),
+			inset 0 1px 0 rgba(255, 255, 255, 0.25);
+	}
+	.profile-qr-modal__badge[data-theme="default"] {
+		background: linear-gradient(145deg, #c45c26, #e08a4a);
+	}
+
+	.profile-qr-modal__title {
+		font-size: 1.18rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+	}
+	.profile-qr-modal__desc {
+		margin-top: 0.28rem;
+		font-size: 0.86rem;
+		opacity: 0.65;
+	}
+
+	.profile-qr-modal__frame {
+		margin: 1.05rem auto 0.9rem;
+		width: min(14rem, 74vw);
+		aspect-ratio: 1;
+		padding: 0.75rem;
+		border-radius: 1.15rem;
+		background:
+			linear-gradient(#fff, #fff) padding-box,
+			linear-gradient(135deg, #07c160, #c45c26, #f0c27a) border-box;
+		border: 2px solid transparent;
+		box-shadow:
+			0 14px 32px rgba(70, 42, 18, 0.12),
+			inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+	}
+	.profile-qr-modal__frame[data-theme="douyin"] {
+		background:
+			linear-gradient(#fff, #fff) padding-box,
+			linear-gradient(135deg, #25f4ee, #111 45%, #fe2c55) border-box;
+	}
+	:root.dark .profile-qr-modal__frame {
+		background:
+			linear-gradient(#1c1814, #1c1814) padding-box,
+			linear-gradient(135deg, #07c160, #c45c26, #f0c27a) border-box;
+	}
+	:root.dark .profile-qr-modal__frame[data-theme="douyin"] {
+		background:
+			linear-gradient(#1c1814, #1c1814) padding-box,
+			linear-gradient(135deg, #25f4ee, #333 45%, #fe2c55) border-box;
+	}
+	.profile-qr-modal__frame img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+		border-radius: 0.8rem;
+		background: #fff;
+	}
+
+	.profile-qr-modal__hint {
+		font-size: 0.8rem;
+		opacity: 0.55;
+		letter-spacing: 0.02em;
+		line-height: 1.45;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#profile-qr-modal.profile-qr-modal,
+		.profile-qr-modal__panel {
+			transition: none;
 		}
 	}
 </style>

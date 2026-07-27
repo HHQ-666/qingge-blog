@@ -9,6 +9,12 @@
 - GitHub：[@HHQ-666](https://github.com/HHQ-666)
 - CSDN：[清阿哥](https://blog.csdn.net/weixin_44980732)
 - 邮箱：[353398163@qq.com](mailto:353398163@qq.com)
+- 抖音：HHQ20250621 · 睁眼看世界（侧栏点抖音图标扫码）
+
+  ![抖音二维码](/media/douyin-qr.png)
+- 微信公众号：侧栏点微信图标扫码关注，或见下方二维码
+
+  ![微信公众号二维码](/media/wechat-official-qr.png)
 
 ---
 
