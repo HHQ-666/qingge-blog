@@ -117,6 +117,20 @@ export const profileConfig: ProfileConfig = {
 			icon: "fa6-solid:blog",
 			url: "https://blog.csdn.net/weixin_44980732",
 		},
+		{
+			name: "抖音",
+			icon: "fa6-brands:tiktok",
+			// 抖音号：HHQ20250621（睁眼看世界）— 用二维码，避免跳搜索页出现大量同名用户
+			url: "#douyin-qr",
+			qr: "/media/douyin-qr.png",
+		},
+		{
+			name: "公众号",
+			icon: "fa6-brands:weixin",
+			// 点击弹出二维码
+			url: "#wechat-official",
+			qr: "/media/wechat-official-qr.png",
+		},
 	],
 };
 
