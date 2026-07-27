@@ -24,5 +24,5 @@ lang: "zh_CN"
 
 margin，height 可根据实际情况设置大小。  
 效果图：  
-![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/a0f5f3e21ee69b1741e8fbcef99fd5b8.png)  
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/elementui-dialog组件固定高度-114889334/61c1970234b63766.png)  
 欢迎大家留言交流！

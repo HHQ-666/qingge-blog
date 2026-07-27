@@ -443,7 +443,7 @@ export default {
 
 #### 5. 效果图
 
-![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/01bbffc647d6dd333e0a45e44b5b0ff3.png)  
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/ElementUI-upload-组件封装-115733537/8894f6fe00c222b3.png)  
  PS：开发中还是遇到挺多问题的，文件名称的显示写的不太好 使用`calc` 动态调节的样式这个后面可以优化，在网上查找都是重写上传组件，时间紧迫就没有搞了，上传组件的上传进度之前使用的 `el-progress` 但是有问题，后续再研究添加上上传进度显示，有些过的可以留言交流下。
 
 希望能够帮助到你，有问题可以随时留言交流！

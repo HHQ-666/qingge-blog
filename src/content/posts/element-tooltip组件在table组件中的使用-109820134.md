@@ -126,6 +126,6 @@ export default {
 ```
 
 效果图如下：  
-![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/cbd231cc4407f42094a2e6387cda8fac.png#pic_center)  
+![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/element-tooltip组件在table组件中的使用-109820134/fba2f71739971fa6.png)  
 展示需要展示 tooltip 的需求都可以使用，上面的组件。  
 如果有什么问题，可以留言一起交流。

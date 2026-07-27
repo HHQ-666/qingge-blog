@@ -100,8 +100,8 @@ confirmDownload() {
 
 **效果图如下**  
  下载弹窗  
- ![![在这里插入图片描述](https://img-blog.csdnimg.cn/20201120150513273.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl80NDk4MDczMg==,size_16,color_FFFFFF,t_70#pic_center](https://i-blog.csdnimg.cn/blog_migrate/881350c3e926490b4a55acdbb6216709.png#pic_center)  
- ![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/80e8115e1d32799e6635c984f93e3d5d.png#pic_center)  
+ ![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue使用-vue-qr-和-html2canvas-链接生成普通二维码和海报二维码-109849492/bd3284bc101950c1.png)  
+ ![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue使用-vue-qr-和-html2canvas-链接生成普通二维码和海报二维码-109849492/7114b60945e36440.png)  
  **二维码和背景图片合成海报二维码下载到本地**  
  模板中的代码
 
@@ -171,8 +171,8 @@ css
 ```
 
 效果图如下  
- ![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/33e17f75bd226edd57605e8c4ce8120d.png#pic_center)  
- ![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/c0f47cfdf81017ea68bcc2bec36534d3.png#pic_center)  
+ ![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue使用-vue-qr-和-html2canvas-链接生成普通二维码和海报二维码-109849492/b283b488dce70b90.png)  
+ ![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue使用-vue-qr-和-html2canvas-链接生成普通二维码和海报二维码-109849492/555ca9a432ade3f7.png)  
  **vue-qr 常用属性介绍**
 
 text 二维码内容  

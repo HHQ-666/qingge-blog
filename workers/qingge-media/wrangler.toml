@@ -1,0 +1,8 @@
+name = "green-mouse-f903"
+main = "src/index.mjs"
+compatibility_date = "2026-07-27"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "qingge-blog-assets"

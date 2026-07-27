@@ -129,5 +129,5 @@ export default {
 ```
 
 效果预览  
- ![在这里插入图片描述](https://i-blog.csdnimg.cn/blog_migrate/8fcbf77dd95a9e41f84f2cc452caba14.png)  
+ ![在这里插入图片描述](https://green-mouse-f903.heqing299-328.workers.dev/posts/vue-pdf-预览下载功能-vue-pdf-115443136/f0ff317bfb81b2d2.png)  
  如果对你有所帮助，欢迎大家留言交流！
