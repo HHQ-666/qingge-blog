@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  canWritePost,
   collectCsdnImageUrls,
   makeStorageKey,
   replaceImageUrl,
@@ -32,4 +33,9 @@ test("replaces only the selected CSDN URL", () => {
     replaceImageUrl(markdown, source, target),
     `![CSDN](${target})\n![Other](https://example.com/image.png)`,
   );
+});
+
+test("keeps a whole post unchanged when any image migration fails", () => {
+  assert.equal(canWritePost([{ status: "migrated" }, { status: "failed" }]), false);
+  assert.equal(canWritePost([{ status: "migrated" }, { status: "migrated" }]), true);
 });

@@ -57,6 +57,10 @@ export function replaceImageUrl(markdown, sourceUrl, targetUrl) {
   return markdown.split(sourceUrl).join(targetUrl);
 }
 
+export function canWritePost(results) {
+  return results.every((result) => result.status !== "failed");
+}
+
 function parseArguments(args) {
   const options = { apply: false, post: null };
 
@@ -216,8 +220,7 @@ async function migratePost(filePath, options, client) {
     }
   }
 
-  if (options.apply && updated !== original) await writeFile(filePath, updated);
-  return results;
+  return { filePath, original, results, updated };
 }
 
 async function existingManifestResults() {
@@ -237,9 +240,18 @@ export async function runMigration(options) {
     (filePath) => !options.post || path.basename(filePath, ".md") === options.post,
   );
   const client = options.apply ? r2Client() : null;
-  const results = (await Promise.all(files.map((filePath) => migratePost(filePath, options, client)))).flat();
+  const posts = await Promise.all(files.map((filePath) => migratePost(filePath, options, client)));
+  const results = posts.flatMap((post) => post.results);
 
   if (options.apply) {
+    if (canWritePost(results)) {
+      await Promise.all(
+        posts
+          .filter((post) => post.updated !== post.original)
+          .map((post) => writeFile(post.filePath, post.updated)),
+      );
+    }
+
     const allResults = new Map(
       [...(await existingManifestResults()), ...results].map((result) => [
         `${result.post}:${result.sourceUrl}`,
