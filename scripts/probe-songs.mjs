@@ -11,7 +11,7 @@
  * 输出可直接誊抄进 src/config.ts 的 songs 数组。
  */
 
-const API = "https://meting.mikus.ink/api";
+const API = "https://api.i-meto.com/meting/api";
 
 /** 候选：[歌名, 歌手]。歌手用于校验搜索结果，每位歌手只保留一首 */
 const CANDIDATES = [

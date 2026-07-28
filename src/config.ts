@@ -245,8 +245,9 @@ export const funConfig = {
 		minDurationSec: 90,
 		/** 歌单缓存小时数，刷新页面直接用缓存 */
 		cacheHours: 6,
-		/** 当前可用的完整音源代理（若失效请更换） */
-		api: "https://meting.mikus.ink/api",
+		/** 主音源代理；遇到限流或服务故障时会自动尝试备用代理。 */
+		api: "https://api.i-meto.com/meting/api",
+		fallbackApis: ["https://api.injahow.cn/meting/"],
 		/**
 		 * 歌单。优先放实测可完整播放的曲目。
 		 * 周杰伦部分歌曲接口常被墙，已从默认列表去掉，避免点了没声。

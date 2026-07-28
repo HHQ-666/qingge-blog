@@ -1,6 +1,6 @@
 const SCRIPT_SRC = "https://cdn.jsdelivr.net/npm/twikoo@1.6.44/dist/twikoo.min.js";
-
-let scriptPromise;
+const SCRIPT_PROMISE_KEY = "__qinggeTwikooScriptPromise";
+const SCRIPT_SELECTOR = 'script[data-qingge-twikoo="1"]';
 
 export function claimMount(host) {
 	const token = String(Number(host.dataset.twikooMountToken || "0") + 1);
@@ -15,25 +15,33 @@ export function isCurrentMount(host, token) {
 export function loadTwikoo(documentRef = document) {
 	const windowRef = documentRef.defaultView || window;
 	if (windowRef.twikoo) return Promise.resolve(windowRef.twikoo);
-	if (scriptPromise) return scriptPromise;
+	if (windowRef[SCRIPT_PROMISE_KEY]) return windowRef[SCRIPT_PROMISE_KEY];
 
-	scriptPromise = new Promise((resolve, reject) => {
-		const script = documentRef.createElement("script");
+	const existingScript = documentRef.querySelector?.(SCRIPT_SELECTOR);
+	const script = existingScript || documentRef.createElement("script");
+	if (!existingScript) {
 		script.src = SCRIPT_SRC;
 		script.async = true;
 		script.dataset.qinggeTwikoo = "1";
+	}
+
+	const promise = new Promise((resolve, reject) => {
 		script.onload = () => {
 			if (windowRef.twikoo) resolve(windowRef.twikoo);
 			else reject(new Error("Twikoo global missing after script load"));
 		};
 		script.onerror = () => reject(new Error("Twikoo script failed to load"));
-		documentRef.head.appendChild(script);
-	}).catch((error) => {
-		scriptPromise = undefined;
-		throw error;
+		if (!existingScript) documentRef.head.appendChild(script);
 	});
 
-	return scriptPromise;
+	const sharedPromise = promise.catch((error) => {
+		script.remove?.();
+		if (windowRef[SCRIPT_PROMISE_KEY] === sharedPromise) delete windowRef[SCRIPT_PROMISE_KEY];
+		throw error;
+	});
+	windowRef[SCRIPT_PROMISE_KEY] = sharedPromise;
+
+	return sharedPromise;
 }
 
 export async function mountTwikoo(host, options) {
