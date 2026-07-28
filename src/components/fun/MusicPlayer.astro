@@ -74,6 +74,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							<h2 class="qm__title">{title}</h2>
 						</div>
 						<div class="qm__head-actions">
+							<button type="button" class="qm__playback-mode-btn" id="qm-playback-mode" title="播放模式：顺序" aria-label="播放模式：顺序">
+								<span id="qm-playback-mode-label">顺序</span>
+							</button>
 							<button type="button" class="qm__compact-btn" id="qm-compact" title="精简模式" aria-label="切换到精简模式">
 								精简模式
 							</button>
@@ -136,7 +139,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 
 {
 	enabled && (
-		<script is:inline>
+        <script>
+          // @ts-nocheck
+          import {
+				getNextIndex,
+				nextPlaybackMode,
+				PLAYBACK_MODE_LABELS,
+				PLAYBACK_MODES,
+			} from "../../scripts/music-playback-mode.mjs";
+
 			(function () {
 				var root = document.getElementById("qingge-music");
 				if (!root || root.dataset.booted) return;
@@ -235,6 +246,35 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var miniOpenFull = document.getElementById("qm-mini-open-full");
 				var miniCloseBtn = document.getElementById("qm-mini-close");
 				var MODE_KEY = "qingge-music-mode";
+				var playbackModeBtn = document.getElementById("qm-playback-mode");
+				var playbackModeLabel = document.getElementById("qm-playback-mode-label");
+				var PLAYBACK_MODE_KEY = "qingge-music-playback-mode";
+				var playbackMode = "sequence";
+
+				try {
+					var storedPlaybackMode = localStorage.getItem(PLAYBACK_MODE_KEY);
+					if (PLAYBACK_MODES.includes(storedPlaybackMode)) playbackMode = storedPlaybackMode;
+				} catch (e) {}
+
+				function syncPlaybackModeButton() {
+					var label = PLAYBACK_MODE_LABELS[playbackMode] || PLAYBACK_MODE_LABELS.sequence;
+					if (playbackModeLabel) playbackModeLabel.textContent = label;
+					if (playbackModeBtn) {
+						playbackModeBtn.title = "播放模式：" + label;
+						playbackModeBtn.setAttribute("aria-label", "播放模式：" + label);
+					}
+				}
+
+				function setPlaybackMode(nextMode) {
+					playbackMode = PLAYBACK_MODES.includes(nextMode) ? nextMode : "sequence";
+					try { localStorage.setItem(PLAYBACK_MODE_KEY, playbackMode); } catch (e) {}
+					syncPlaybackModeButton();
+				}
+
+				syncPlaybackModeButton();
+				if (playbackModeBtn) playbackModeBtn.addEventListener("click", function () {
+					setPlaybackMode(nextPlaybackMode(playbackMode));
+				});
 
 				/** mode: 'fab' | 'full' | 'compact' */
 				function setMode(mode) {
@@ -247,9 +287,6 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (miniEl) miniEl.hidden = !isCompact;
 					try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
 					if (isFull || isCompact) ensureLoaded();
-				}
-				function setOpen(open) {
-					setMode(open ? "full" : "fab");
 				}
 				if (toggle) toggle.addEventListener("click", function () {
 					setMode("full");
@@ -512,7 +549,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							}
 						}, 180);
 					});
-					audio.addEventListener("ended", function () { playIndex(index + 1, true); });
+					audio.addEventListener("ended", function () {
+						var next = getNextIndex(playbackMode, index, loaded.length);
+						if (next >= 0) playIndex(next, true);
+					});
 					audio.addEventListener("error", function () {
 						var item = loaded[index];
 						if (!item || recovering) return;
@@ -911,6 +951,23 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				backdrop-filter: blur(8px);
 				-webkit-backdrop-filter: blur(8px);
 				transition: background 140ms ease, border-color 140ms ease;
+			}
+			.qm__playback-mode-btn {
+				height: 2rem;
+				padding: 0 0.7rem;
+				border-radius: 999px;
+				border: 1px solid oklch(0.78 0.08 var(--hue) / 0.28);
+				background: rgba(255,255,255,0.08);
+				color: #fff;
+				font-size: 0.72rem;
+				font-weight: 700;
+				cursor: pointer;
+				white-space: nowrap;
+				transition: background 140ms ease, border-color 140ms ease;
+			}
+			.qm__playback-mode-btn:hover {
+				background: rgba(255,255,255,0.16);
+				border-color: oklch(0.88 0.08 var(--hue) / 0.5);
 			}
 			.qm__compact-btn:hover {
 				background: oklch(0.78 0.12 var(--hue) / 0.38);
