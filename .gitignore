@@ -32,3 +32,7 @@ yarn.lock
 
 # Claude Code local
 .claude/
+
+# local build and inspection artifacts
+.pnpm-store/
+.tmp-screens/
