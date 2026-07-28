@@ -11,7 +11,7 @@ const conf = funConfig.musicPlayer;
 const songs = conf?.songs?.length ? conf.songs : [];
 const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
-const api = conf?.api || "https://api.qijieya.cn/meting/";
+const api = conf?.api || "https://meting.mikus.ink/api";
 const volume = String(conf?.volume ?? 0.55);
 const title = conf?.panelTitle || "华语金曲电台";
 const subtitle = conf?.panelSubtitle || "80 / 90 / 00 经典";
@@ -157,7 +157,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				try { songs = JSON.parse(root.getAttribute("data-songs") || "[]"); } catch (e) { songs = []; }
 				if (!songs.length) return;
 
-				var apiBase = root.getAttribute("data-api") || "https://api.qijieya.cn/meting/";
+				var apiBase = root.getAttribute("data-api") || "https://meting.mikus.ink/api";
 				var volume = parseFloat(root.getAttribute("data-volume") || "0.55");
 				if (isNaN(volume)) volume = 0.55;
 				var cacheHours = parseFloat(root.getAttribute("data-cache-hours") || "6");
