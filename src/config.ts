@@ -245,14 +245,15 @@ export const funConfig = {
 		minDurationSec: 90,
 		/** 歌单缓存小时数，刷新页面直接用缓存 */
 		cacheHours: 6,
-		/** 当前可用的完整音源代理（若失效请更换） */
-		api: "https://api.qijieya.cn/meting/",
+		/** 主音源代理；遇到限流或服务故障时会自动尝试备用代理。 */
+		api: "https://api.i-meto.com/meting/api",
+		fallbackApis: ["https://api.injahow.cn/meting/"],
 		/**
 		 * 歌单。优先放实测可完整播放的曲目。
 		 * 周杰伦部分歌曲接口常被墙，已从默认列表去掉，避免点了没声。
 		 */
 		songs: [
-			{ id: "86363", title: "此生不换", artist: "青鸟飞鱼" },
+			{ id: "1934168650", title: "此生不换", artist: "青鸟飞鱼" },
 			{ id: "190072", title: "黄昏", artist: "周传雄" },
 			{ id: "108914", title: "江南", artist: "林俊杰" },
 			{ id: "85580", title: "童话", artist: "光良" },
@@ -262,16 +263,17 @@ export const funConfig = {
 			{ id: "376417", title: "一生有你", artist: "水木年华" },
 			{ id: "97357", title: "那些年", artist: "胡夏" },
 			{ id: "190449", title: "吻别", artist: "张学友" },
-			{ id: "316425", title: "小城大事", artist: "杨千嬅" },
+			{ id: "316756", title: "小城大事", artist: "杨千嬅" },
 			{ id: "385781", title: "突然好想你", artist: "五月天" },
-			{ id: "386538", title: "温柔", artist: "五月天" },
-			{ id: "386005", title: "倔强", artist: "五月天" },
 			{ id: "436514312", title: "成都", artist: "赵雷" },
 			{ id: "32507038", title: "演员", artist: "薛之谦" },
-			{ id: "169185", title: "认真的雪", artist: "薛之谦" },
-			{ id: "233931", title: "泡沫", artist: "G.E.M.邓紫棋" },
-			{ id: "449818741", title: "光年之外", artist: "G.E.M.邓紫棋" },
-			{ id: "347230", title: "海阔天空", artist: "Beyond" },
+			{ id: "2714278532", title: "泡沫", artist: "邓紫棋" },
+			{ id: "1357375695", title: "海阔天空", artist: "Beyond" },
+			{ id: "1847408145", title: "月亮代表我的心", artist: "邓丽君" },
+			{ id: "150992", title: "其实你不懂我的心", artist: "童安格" },
+			{ id: "28819044", title: "大约在冬季", artist: "齐秦" },
+			{ id: "158924", title: "一场游戏一场梦", artist: "王杰" },
+			{ id: "187338", title: "爱如潮水", artist: "张信哲" },
 		],
 	},
 };

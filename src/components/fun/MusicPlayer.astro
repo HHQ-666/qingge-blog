@@ -11,7 +11,9 @@ const conf = funConfig.musicPlayer;
 const songs = conf?.songs?.length ? conf.songs : [];
 const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
-const api = conf?.api || "https://api.qijieya.cn/meting/";
+const api = conf?.api || "https://api.i-meto.com/meting/api";
+const fallbackApis = Array.isArray(conf?.fallbackApis) ? conf.fallbackApis : [];
+const apisJson = JSON.stringify([...new Set([api, ...fallbackApis].filter(Boolean))]);
 const volume = String(conf?.volume ?? 0.55);
 const title = conf?.panelTitle || "华语金曲电台";
 const subtitle = conf?.panelSubtitle || "80 / 90 / 00 经典";
@@ -26,7 +28,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			class="qm is-collapsed"
 			aria-label="音乐播放器"
 			data-songs={songsJson}
-			data-api={api}
+			data-apis={apisJson}
 			data-volume={volume}
 			data-cache-hours={cacheHours}
 		>
@@ -74,6 +76,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							<h2 class="qm__title">{title}</h2>
 						</div>
 						<div class="qm__head-actions">
+							<button type="button" class="qm__playback-mode-btn" id="qm-playback-mode" title="播放模式：顺序" aria-label="播放模式：顺序">
+								<span id="qm-playback-mode-label">顺序</span>
+							</button>
 							<button type="button" class="qm__compact-btn" id="qm-compact" title="精简模式" aria-label="切换到精简模式">
 								精简模式
 							</button>
@@ -136,7 +141,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 
 {
 	enabled && (
-		<script is:inline>
+        <script>
+          // @ts-nocheck
+          import {
+				getNextIndex,
+				nextPlaybackMode,
+				PLAYBACK_MODE_LABELS,
+				PLAYBACK_MODES,
+			} from "../../scripts/music-playback-mode.mjs";
+
 			(function () {
 				var root = document.getElementById("qingge-music");
 				if (!root || root.dataset.booted) return;
@@ -146,7 +159,12 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				try { songs = JSON.parse(root.getAttribute("data-songs") || "[]"); } catch (e) { songs = []; }
 				if (!songs.length) return;
 
-				var apiBase = root.getAttribute("data-api") || "https://api.qijieya.cn/meting/";
+				var apiBases = [];
+				try { apiBases = JSON.parse(root.getAttribute("data-apis") || "[]"); } catch (e) { apiBases = []; }
+				apiBases = apiBases.filter(function (item) { return typeof item === "string" && item; });
+				if (!apiBases.length) apiBases = ["https://api.i-meto.com/meting/api"];
+				var apiFingerprint = apiBases.join("|");
+				var apiCooldowns = {};
 				var volume = parseFloat(root.getAttribute("data-volume") || "0.55");
 				if (isNaN(volume)) volume = 0.55;
 				var cacheHours = parseFloat(root.getAttribute("data-cache-hours") || "6");
@@ -206,7 +224,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						if (!raw) return null;
 						var data = JSON.parse(raw);
 						if (!data || !data.items || !data.items.length) return null;
-						if (data.api !== apiBase) return null;
+						if (data.api !== apiFingerprint) return null;
 						if (data.ids !== songIdsFingerprint()) return null;
 						var age = Date.now() - (data.ts || 0);
 						if (age > cacheHours * 3600 * 1000) return null;
@@ -222,7 +240,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							CACHE_KEY,
 							JSON.stringify({
 								ts: Date.now(),
-								api: apiBase,
+								api: apiFingerprint,
 								ids: songIdsFingerprint(),
 								items: items,
 							}),
@@ -235,6 +253,35 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var miniOpenFull = document.getElementById("qm-mini-open-full");
 				var miniCloseBtn = document.getElementById("qm-mini-close");
 				var MODE_KEY = "qingge-music-mode";
+				var playbackModeBtn = document.getElementById("qm-playback-mode");
+				var playbackModeLabel = document.getElementById("qm-playback-mode-label");
+				var PLAYBACK_MODE_KEY = "qingge-music-playback-mode";
+				var playbackMode = "sequence";
+
+				try {
+					var storedPlaybackMode = localStorage.getItem(PLAYBACK_MODE_KEY);
+					if (PLAYBACK_MODES.includes(storedPlaybackMode)) playbackMode = storedPlaybackMode;
+				} catch (e) {}
+
+				function syncPlaybackModeButton() {
+					var label = PLAYBACK_MODE_LABELS[playbackMode] || PLAYBACK_MODE_LABELS.sequence;
+					if (playbackModeLabel) playbackModeLabel.textContent = label;
+					if (playbackModeBtn) {
+						playbackModeBtn.title = "播放模式：" + label;
+						playbackModeBtn.setAttribute("aria-label", "播放模式：" + label);
+					}
+				}
+
+				function setPlaybackMode(nextMode) {
+					playbackMode = PLAYBACK_MODES.includes(nextMode) ? nextMode : "sequence";
+					try { localStorage.setItem(PLAYBACK_MODE_KEY, playbackMode); } catch (e) {}
+					syncPlaybackModeButton();
+				}
+
+				syncPlaybackModeButton();
+				if (playbackModeBtn) playbackModeBtn.addEventListener("click", function () {
+					setPlaybackMode(nextPlaybackMode(playbackMode));
+				});
 
 				/** mode: 'fab' | 'full' | 'compact' */
 				function setMode(mode) {
@@ -247,9 +294,6 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (miniEl) miniEl.hidden = !isCompact;
 					try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
 					if (isFull || isCompact) ensureLoaded();
-				}
-				function setOpen(open) {
-					setMode(open ? "full" : "fab");
 				}
 				if (toggle) toggle.addEventListener("click", function () {
 					setMode("full");
@@ -386,14 +430,26 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					}
 				}
 
-				function apiUrl(type, id) {
-					var join = apiBase.indexOf("?") >= 0 ? "&" : "?";
-					return apiBase + join + "server=netease&type=" + encodeURIComponent(type) + "&id=" + encodeURIComponent(id);
+				function apiUrl(base, type, id) {
+					var join = base.indexOf("?") >= 0 ? "&" : "?";
+					return base + join + "server=netease&type=" + encodeURIComponent(type) + "&id=" + encodeURIComponent(id);
 				}
 
-				function fetchSong(meta) {
-					return fetch(apiUrl("song", meta.id), { credentials: "omit" })
-						.then(function (r) { if (!r.ok) throw new Error("http"); return r.json(); })
+				function apiOnCooldown(base) {
+					return Number(apiCooldowns[base] || 0) > Date.now();
+				}
+
+				function fetchSongFromApi(meta, base) {
+					return fetch(apiUrl(base, "song", meta.id), { credentials: "omit" })
+						.then(function (r) {
+							if (r.status === 429) {
+								var retryAfter = Number(r.headers.get("retry-after")) || 1;
+								apiCooldowns[base] = Date.now() + Math.min(retryAfter, 60) * 1000;
+								throw new Error("rate limited");
+							}
+							if (!r.ok) throw new Error("http " + r.status);
+							return r.json();
+						})
 						.then(function (data) {
 							var s = Array.isArray(data) ? data[0] : data;
 							if (!s || !s.url) return null;
@@ -424,7 +480,19 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 									};
 								});
 						})
-						.catch(function () { return null; });
+				}
+
+				function fetchSong(meta) {
+					var index = 0;
+					function tryNextApi() {
+						while (index < apiBases.length && apiOnCooldown(apiBases[index])) index++;
+						if (index >= apiBases.length) return Promise.resolve(null);
+						var base = apiBases[index++];
+						return fetchSongFromApi(meta, base).then(function (item) {
+							return item || tryNextApi();
+						}).catch(tryNextApi);
+					}
+					return tryNextApi();
 				}
 
 				/** 单曲 URL 失效时重新解析 */
@@ -512,7 +580,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							}
 						}, 180);
 					});
-					audio.addEventListener("ended", function () { playIndex(index + 1, true); });
+					audio.addEventListener("ended", function () {
+						var next = getNextIndex(playbackMode, index, loaded.length);
+						if (next >= 0) playIndex(next, true);
+					});
 					audio.addEventListener("error", function () {
 						var item = loaded[index];
 						if (!item || recovering) return;
@@ -583,7 +654,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					showLoading();
 					setLoadProgress(0, songs.length, 0);
 					var i = 0;
-					var concurrency = 3;
+					var concurrency = 2;
 					var skipped = 0;
 					var items = [];
 					function next() {
@@ -911,6 +982,23 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				backdrop-filter: blur(8px);
 				-webkit-backdrop-filter: blur(8px);
 				transition: background 140ms ease, border-color 140ms ease;
+			}
+			.qm__playback-mode-btn {
+				height: 2rem;
+				padding: 0 0.7rem;
+				border-radius: 999px;
+				border: 1px solid oklch(0.78 0.08 var(--hue) / 0.28);
+				background: rgba(255,255,255,0.08);
+				color: #fff;
+				font-size: 0.72rem;
+				font-weight: 700;
+				cursor: pointer;
+				white-space: nowrap;
+				transition: background 140ms ease, border-color 140ms ease;
+			}
+			.qm__playback-mode-btn:hover {
+				background: rgba(255,255,255,0.16);
+				border-color: oklch(0.88 0.08 var(--hue) / 0.5);
 			}
 			.qm__compact-btn:hover {
 				background: oklch(0.78 0.12 var(--hue) / 0.38);

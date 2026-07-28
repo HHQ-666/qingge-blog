@@ -26,10 +26,8 @@
 </div>
 
 <script>
-	(() => {
-		const loader = document.getElementById("page-loader");
-		if (!loader) return;
-
+	// 以参数接收已判空的元素，避免闭包内类型收窄失效
+	function bootPageLoader(loader: HTMLElement) {
 		const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 		let hideTimer = 0;
 		let shownAt = 0;
@@ -57,12 +55,15 @@
 				loader.classList.remove("is-active");
 				loader.setAttribute("aria-hidden", "true");
 				// 等淡出后再 hidden，避免闪断
-				hideTimer = window.setTimeout(() => {
-					if (!loader.classList.contains("is-active")) {
-						loader.hidden = true;
-					}
-					hideTimer = 0;
-				}, reduced ? 0 : 280);
+				hideTimer = window.setTimeout(
+					() => {
+						if (!loader.classList.contains("is-active")) {
+							loader.hidden = true;
+						}
+						hideTimer = 0;
+					},
+					reduced ? 0 : 280,
+				);
 			}, wait);
 		}
 
@@ -70,7 +71,7 @@
 			const swup = window.swup;
 			if (!swup?.hooks) return;
 			// 同一会话避免重复绑定
-			if ((loader as HTMLElement & { dataset: DOMStringMap }).dataset.bound === "1") return;
+			if (loader.dataset.bound === "1") return;
 			loader.dataset.bound = "1";
 
 			swup.hooks.on("visit:start", show);
@@ -86,7 +87,10 @@
 		} else {
 			document.addEventListener("swup:enable", setup);
 		}
-	})();
+	}
+
+	const pageLoaderRoot = document.getElementById("page-loader");
+	if (pageLoaderRoot) bootPageLoader(pageLoaderRoot);
 </script>
 
 <style is:global>

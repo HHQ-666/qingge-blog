@@ -34,67 +34,44 @@ const pathMode = twikooConfig.path || "pathname";
 				<span class="inline-block w-1 h-5 rounded-full bg-[var(--primary)]" />
 				{i18n(I18nKey.comments)}
 			</h2>
-			<div id="tcomment" class="twikoo-host" />
-			<script
-				is:inline
-				define:vars={{ envId, region, pathMode }}
+			<div
+				id="tcomment"
+				class="twikoo-host"
+				data-env-id={envId}
+				data-region={region}
+				data-path-mode={pathMode}
+				aria-busy="true"
 			>
-				(function () {
-					var booted = false;
-					function path() {
-						if (pathMode === "url") return location.href;
-						return location.pathname;
-					}
-					function theme() {
-						return document.documentElement.classList.contains("dark")
-							? "dark"
-							: "light";
-					}
-					function mount() {
-						var el = document.getElementById("tcomment");
-						if (!el || typeof twikoo === "undefined") return;
-						// 清空旧实例（Swup 切页）
-						el.innerHTML = "";
-						try {
-							twikoo.init({
-								envId: envId,
-								el: "#tcomment",
-								path: path(),
-								region: region || undefined,
-								lang: "zh-CN",
-							});
-						} catch (e) {
-							console.error("[twikoo]", e);
-						}
-					}
-					function loadScript(cb) {
-						if (typeof twikoo !== "undefined") {
-							cb();
-							return;
-						}
-						var s = document.createElement("script");
-						s.src = "https://cdn.jsdelivr.net/npm/twikoo@1.6.44/dist/twikoo.min.js";
-						s.async = true;
-						s.onload = cb;
-						s.onerror = function () {
-							var el = document.getElementById("tcomment");
-							if (el) el.innerHTML = '<p class="text-50 text-sm">评论加载失败，请稍后刷新重试。</p>';
-						};
-						document.head.appendChild(s);
-					}
-					function boot() {
-						if (!document.getElementById("tcomment")) return;
-						loadScript(mount);
-					}
-					if (document.readyState === "loading") {
-						document.addEventListener("DOMContentLoaded", boot);
-					} else {
-						boot();
-					}
-					document.addEventListener("swup:page:view", boot);
-					// 跟随站点亮暗切换时刷新主题（Twikoo 读 html.dark）
-					document.addEventListener("theme-change", boot);
-				})();
+				<p class="twikoo-loading text-50 text-sm" role="status">评论加载中…</p>
+			</div>
+			<script>
+				import { mountTwikoo } from "../scripts/twikoo-bootstrap.mjs";
+
+				type TwikooRuntimeWindow = Window & {
+					__qinggeTwikooListenerBound?: boolean;
+				};
+
+				function bootComment() {
+					const host = document.getElementById("tcomment");
+					if (!host) return;
+
+					const path = host.dataset.pathMode === "url" ? location.href : location.pathname;
+					if (host.dataset.twikooMountedPath === path) return;
+
+					void mountTwikoo(host, {
+						envId: host.dataset.envId || "",
+						region: host.dataset.region || undefined,
+						path,
+					});
+				}
+
+				const runtimeWindow = window as TwikooRuntimeWindow;
+				if (!runtimeWindow.__qinggeTwikooListenerBound) {
+					runtimeWindow.__qinggeTwikooListenerBound = true;
+					document.addEventListener("swup:page:view", bootComment);
+				}
+
+				bootComment();
 			</script>
 		</section>
 	)
@@ -212,7 +189,13 @@ const pathMode = twikooConfig.path || "pathname";
 		width: 100%;
 	}
 	.twikoo-host {
-		min-height: 4rem;
+		min-height: 5rem;
+		display: grid;
+		align-items: center;
+	}
+	.twikoo-loading {
+		margin: 0;
+		text-align: center;
 	}
 	/* Twikoo 主题色贴近站点 */
 	.comment-section :global(.tk-comments) {
@@ -221,6 +204,13 @@ const pathMode = twikooConfig.path || "pathname";
 	.comment-section :global(.tk-submit .tk-avatar),
 	.comment-section :global(.tk-avatar) {
 		border-radius: 0.75rem !important;
+	}
+	.comment-section :global(.tk-avatar),
+	.comment-section :global(.tk-avatar img) {
+		width: 2.5rem !important;
+		height: 2.5rem !important;
+		max-width: 100%;
+		object-fit: cover;
 	}
 	.comment-section :global(.tk-input) {
 		border-radius: 0.75rem !important;
