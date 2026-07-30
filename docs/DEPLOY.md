@@ -221,42 +221,28 @@ PC 后台：[`/admin/`](https://blog.hhq688.com/admin/)
 - Vercel 自动构建后上线
 - 封面上传目录：`public/media/uploads/`
 
-### 启用 GitHub OAuth（首次必做）
+### 登录方式（口令 + GitHub Token）
 
-CMS 需要 OAuth 才能「Login with GitHub」。任选其一：
+本站 `/admin/` 已改为简单入口，**不再依赖 GitHub OAuth / Netlify 代理**（旧的 `api.netlify.com/auth` 会 Not Found）。
 
-#### 方式 1：Netlify Identity 兼容代理（常见）
+1. 打开 [`/admin/`](https://blog.hhq688.com/admin/)
+2. 输入**写作口令**（与 `src/config.ts` 里 `authorGate.secret` 一致，当前为 `qingge666`）
+3. **首次**再填一个 GitHub Token：
+   - 打开 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
+   - 生成 token，勾选 **`repo`** 权限
+   - 粘贴到写作台（可勾选「在本机记住 Token」）
+4. 点「进入写作台」→ 验证通过后直接进后台
 
-1. 在 [GitHub Developer Settings](https://github.com/settings/developers) → **OAuth Apps** → **New OAuth App**
-2. 填写：
-   - Application name：`qingge-blog-cms`
-   - Homepage URL：`https://blog.hhq688.com`
-   - Authorization callback URL：按你使用的代理文档填写（若用 Netlify CMS OAuth 代理，常见为代理提供的 callback）
-3. 创建后得到 **Client ID** / **Client Secret**
-4. 部署一个 OAuth 代理（任选）：
-   - [sveltia/sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth)（Cloudflare Workers，推荐）
-   - 或 Decap 文档列出的第三方 External OAuth Client
-5. 在 `public/admin/config.yml` 的 `backend` 下设置：
+说明：
 
-```yaml
-backend:
-  name: github
-  repo: HHQ-666/qingge-blog
-  branch: main
-  base_url: https://你的-oauth-代理地址
-```
+- 口令只挡闲人误入；**真正写仓库**靠 GitHub Token
+- Token 只存在你自己浏览器的 localStorage，不会进 Git
+- 同一浏览器会话内口令通过后刷新可自动进入；换设备需再输入
+- 若 Token 过期/无写权限，入口页会提示重新填写
 
-6. 重新部署博客后，打开 `/admin/` → Login with GitHub
+#### （可选）自建 OAuth
 
-#### 方式 2：Personal Access Token（最快试用）
-
-部分 Sveltia 版本支持 **用 Token 登录**（无需 OAuth App）：
-
-1. GitHub → Settings → Developer settings → **Personal access tokens**  
-2. 生成 token，勾选 `repo` 权限  
-3. `/admin/` 登录页若有 “Sign in with token”，粘贴 token  
-
-> Token 等同仓库写权限，请勿泄露；用完可删除。
+若仍想用「Sign in with GitHub」按钮，可自建 [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth)，并在 `public/admin/config.yml` 填写 `base_url`。对个人站一般没必要。
 
 ### 本地调试 CMS
 

@@ -91,7 +91,7 @@ const bannerOffset =
 ---
 
 <!DOCTYPE html>
-<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]"
+<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px]"
 	  data-overlayscrollbars-initialize
 >
 	<head>
@@ -307,7 +307,9 @@ function setClickOutsideToClose(panel: string, ignores: string[]) {
 				return;
 			}
 		}
-		panelDom!.classList.add("float-panel-closed");
+		if (panelDom) {
+			panelDom.classList.add("float-panel-closed");
+		}
 	});
 }
 setClickOutsideToClose("display-setting", ["display-setting", "display-settings-switch"])

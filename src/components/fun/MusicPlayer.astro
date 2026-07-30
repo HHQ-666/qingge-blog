@@ -11,7 +11,7 @@ const conf = funConfig.musicPlayer;
 const songs = conf?.songs?.length ? conf.songs : [];
 const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
-const api = conf?.api || "https://api.i-meto.com/meting/api";
+const api = conf?.api || "https://api.injahow.cn/meting/";
 const fallbackApis = Array.isArray(conf?.fallbackApis) ? conf.fallbackApis : [];
 const apisJson = JSON.stringify([...new Set([api, ...fallbackApis].filter(Boolean))]);
 const volume = String(conf?.volume ?? 0.55);
@@ -162,7 +162,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var apiBases = [];
 				try { apiBases = JSON.parse(root.getAttribute("data-apis") || "[]"); } catch (e) { apiBases = []; }
 				apiBases = apiBases.filter(function (item) { return typeof item === "string" && item; });
-				if (!apiBases.length) apiBases = ["https://api.i-meto.com/meting/api"];
+				if (!apiBases.length) apiBases = ["https://api.injahow.cn/meting/"];
 				var apiFingerprint = apiBases.join("|");
 				var apiCooldowns = {};
 				var volume = parseFloat(root.getAttribute("data-volume") || "0.55");
@@ -459,9 +459,12 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 									var ct = (r.headers.get("content-type") || "").toLowerCase();
 									if (ct.indexOf("html") >= 0) return null;
 									var cr = r.headers.get("content-range") || "";
+									var cl = r.headers.get("content-length") || "";
 									var total = 0;
 									if (cr.indexOf("/") >= 0) total = Number(cr.split("/").pop()) || 0;
-									if (total > 0 && total < 800000) return null;
+									if (!total && cl) total = Number(cl) || 0;
+									// 网易云试听片段约为 720KB (45秒)；为保证能播放出声，将过滤线降低到 100KB
+									if (total > 0 && total < 100000) return null;
 									return {
 										id: meta.id,
 										name: meta.title || s.name || s.title || meta.id,

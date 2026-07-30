@@ -30,7 +30,7 @@
 - [x] **动态大海 Banner**（视频 + 静态海报首屏占位，避免移动端空白）
 - [x] **华语金曲电台**（FAB 圆盘 + 完整面板 + **精简模式**迷你条，跟随主题色）
 - [x] **Twikoo 评论**（昵称 + 邮箱即可，无需 GitHub 登录）
-- [x] **写作台（Sveltia CMS）**：PC 访问 `/admin/`，GitHub 登录后写文章并发布
+- [x] **写作台（Sveltia CMS）**：PC 访问 `/admin/`，口令 + GitHub Token 进入后写文章并发布
 - [x] **今日一言**：移动端并入欢迎卡（打字机短句）；PC 侧栏独立卡片
 - [x] 移动端分类 / 标签流式展开（单行折叠 + 更多）
 - [x] 不蒜子访问统计、站点运行天数、开场 Splash、阅读进度条等
@@ -164,11 +164,12 @@ docs/
 PC 打开：[https://blog.hhq688.com/admin/](https://blog.hhq688.com/admin/)
 
 - 基于 [Sveltia CMS](https://github.com/sveltia/sveltia-cms)（Git-based）
-- GitHub 登录后可新建/编辑 `src/content/posts`
+- 登录：写作口令 + GitHub Token（勾选 `repo`），不再走 GitHub OAuth 弹窗
+- 登录后可新建/编辑 `src/content/posts`
 - 保存即提交仓库，Vercel 自动部署
-- OAuth 配置见 [docs/DEPLOY.md · 写作台](docs/DEPLOY.md)
+- 详细步骤见 [docs/DEPLOY.md · 写作台](docs/DEPLOY.md)
 
-> 前台不展示入口；请自行收藏 `/admin/`。权限以 GitHub 仓库写权限为准。
+> 前台不展示入口；请自行收藏 `/admin/`。口令挡误入，写权限以 GitHub Token 为准。
 
 ## 📄 License
 

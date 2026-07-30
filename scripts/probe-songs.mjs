@@ -11,7 +11,7 @@
  * 输出可直接誊抄进 src/config.ts 的 songs 数组。
  */
 
-const API = "https://api.i-meto.com/meting/api";
+const API = "https://api.injahow.cn/meting/";
 
 /** 候选：[歌名, 歌手]。歌手用于校验搜索结果，每位歌手只保留一首 */
 const CANDIDATES = [
@@ -90,7 +90,7 @@ const CANDIDATES = [
 	["驿动的心", "姜育恒"],
 ];
 
-const MIN_BYTES = 800000;
+const MIN_BYTES = 100000;
 
 function apiUrl(type, id) {
 	const join = API.includes("?") ? "&" : "?";
@@ -160,7 +160,10 @@ async function verifyPlayable(id) {
 		if (ct.includes("html")) return { ok: false, reason: "html-redirect" };
 
 		const cr = res.headers.get("content-range") || "";
-		const total = cr.includes("/") ? Number(cr.split("/").pop()) || 0 : 0;
+		const cl = res.headers.get("content-length") || "";
+		let total = 0;
+		if (cr.includes("/")) total = Number(cr.split("/").pop()) || 0;
+		if (!total && cl) total = Number(cl) || 0;
 		if (total > 0 && total < MIN_BYTES) {
 			return { ok: false, reason: `too-small(${total})` };
 		}

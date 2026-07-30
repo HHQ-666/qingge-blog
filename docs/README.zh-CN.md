@@ -117,7 +117,7 @@ lang: zh_CN   # 仅当与站点语言不同时需要
 
 PC 访问：`/admin/`（生产：https://blog.hhq688.com/admin/）
 
-GitHub 登录后编辑 Markdown 文章并保存到仓库，自动触发部署。配置见 [DEPLOY.md](./DEPLOY.md)。
+使用写作口令 + GitHub Token 进入后台，编辑 Markdown 并保存到仓库，自动触发部署。配置见 [DEPLOY.md](./DEPLOY.md)。
 
 ## 📄 许可
 
