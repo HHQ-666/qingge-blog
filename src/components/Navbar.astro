@@ -59,19 +59,19 @@ let links: NavBarLink[] = navBarConfig.links.map(
                 <Icon name="material-symbols:edit-document-outline-rounded" class="text-[1.15rem] sm:text-[1.25rem]" />
             </a>
             <!--<SearchPanel client:load>-->
-            <Search client:only="svelte"></Search>
+            <Search client:only="svelte" />
             {!siteConfig.themeColor.fixed && (
                     <button aria-label="Display Settings" class="btn-plain scale-animation rounded-lg h-10 w-10 sm:h-11 sm:w-11 active:scale-90" id="display-settings-switch">
                         <Icon name="material-symbols:palette-outline" class="text-[1.15rem] sm:text-[1.25rem]"></Icon>
                     </button>
             )}
-            <LightDarkSwitch client:only="svelte"></LightDarkSwitch>
+            <LightDarkSwitch client:only="svelte" />
             <button aria-label="Menu" name="Nav Menu" class="btn-plain scale-animation rounded-lg h-10 w-10 sm:h-11 sm:w-11 active:scale-90 md:!hidden" id="nav-menu-switch">
                 <Icon name="material-symbols:menu-rounded" class="text-[1.15rem] sm:text-[1.25rem]"></Icon>
             </button>
         </div>
         <NavMenuPanel links={links}></NavMenuPanel>
-        <DisplaySettings client:only="svelte"></DisplaySettings>
+        <DisplaySettings client:only="svelte" />
     </div>
 </div>
 
@@ -142,15 +142,6 @@ loadButtonScript();
 	document.addEventListener("author:unlocked", function () {
 		showEntry(true);
 	});
-
-	// 2) 控制台提示（仅 dev）
-	if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
-		console.info(
-			'[写作台] 欢迎区小屋图标连点5次；或 localStorage.setItem("qingge-author","' +
-				secret +
-				'") 后刷新',
-		);
-	}
 })();
 </script>
 
