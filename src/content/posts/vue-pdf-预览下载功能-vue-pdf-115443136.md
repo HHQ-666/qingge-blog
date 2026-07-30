@@ -1,6 +1,7 @@
 ---
 title: "vue pdf 预览下载功能 vue-pdf"
 published: 2021-04-05
+image: /media/uploads/covers/vue.png
 description: "基于 vue-pdf 实现 PDF 预览与下载，记录合同类文件在线查看的接入步骤与注意点。"
 tags: ["vue"]
 category: "Vue"

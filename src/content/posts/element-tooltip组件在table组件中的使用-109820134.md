@@ -1,6 +1,7 @@
 ---
 title: "element tooltip组件在table组件中的使用"
 published: 2020-11-19
+image: /media/uploads/covers/vue.png
 description: "总结 Element Tooltip 在 Table 中的用法，处理溢出文本提示与单元格内悬浮交互的常见问题。"
 tags: ["vue"]
 category: "Vue"

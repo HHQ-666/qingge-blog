@@ -1,6 +1,7 @@
 ---
 title: "ElementUI upload 组件封装"
 published: 2021-04-15
+image: /media/uploads/covers/vue.png
 description: "基于 ElementUI 封装可复用的 upload 上传组件，覆盖合同上传等业务场景的常用配置与二次封装思路。"
 tags: ["vue", "html", "css3", "javascript"]
 category: "Vue"

@@ -1,6 +1,7 @@
 ---
 title: "vue使用vant的list组件使用"
 published: 2020-05-26
+image: /media/uploads/covers/vue.png
 description: "讲解 Vant List 列表组件在 Vue 移动端的用法，覆盖上拉加载与分页数据对接。"
 tags: ["vue"]
 category: "Vue"

@@ -1,6 +1,7 @@
 ---
 title: "elementui el-dialog 作为子组件使用关闭时报错"
 published: 2021-03-23
+image: /media/uploads/covers/vue.png
 description: "排查 el-dialog 作为子组件关闭时报错的原因，给出父子通信与销毁时机相关的修复写法。"
 tags: ["vue.js"]
 category: "Vue"

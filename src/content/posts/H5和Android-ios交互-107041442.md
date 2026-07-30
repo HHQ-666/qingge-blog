@@ -1,6 +1,7 @@
 ---
 title: "H5和Android ios交互"
 published: 2020-06-30
+image: /media/uploads/covers/vue.png
 description: "介绍 H5 与 Android / iOS 原生交互的判断与调用方式，适合 WebView 混合开发踩坑与联调。"
 tags: ["html5", "vue.js", "javascript"]
 category: "Vue"

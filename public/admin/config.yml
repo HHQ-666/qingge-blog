@@ -6,16 +6,16 @@ backend:
   name: github
   repo: HHQ-666/qingge-blog
   branch: main
-  # OAuth 代理（默认使用 Netlify 兼容代理，见 DEPLOY.md）
-  # 若使用自建 sveltia-cms-auth，取消注释并填写：
+  # 本站已改为「写作口令 + GitHub Token」登录（见 /admin 入口页），
+  # 不再依赖 Netlify OAuth 代理。若以后自建 sveltia-cms-auth，可再填：
   # base_url: https://your-auth-worker.example.com
 
-# 本地预览（可选）：pnpm dev 时可用
+# 本地若跑 proxy 可保持 true；线上静态托管会忽略
 local_backend: true
 
 # 媒体上传到 public/media/uploads，前台路径 /media/uploads/...
-media_folder: public/media/uploads
-public_folder: /media/uploads
+media_folder: public
+public_folder: /
 
 locale: zh_Hans
 
@@ -31,19 +31,27 @@ slug:
 
 collections:
   - name: posts
-    label: 文章
+    label: 全部文章
     label_singular: 文章
     description: 写入 src/content/posts，保存后提交到 GitHub，Vercel 自动构建上线。
     folder: src/content/posts
     create: true
     delete: true
+    sortable_fields: &postsSortableFields
+      fields:
+        - published
+        - title
+        - description
+      default:
+        field: published
+        direction: descending
     # 文件名：标题 slug + 时间戳，避免中文/重复冲突
     slug: "{{slug}}-{{year}}{{month}}{{day}}{{hour}}{{minute}}"
     extension: md
     format: frontmatter
     # 预览路径（与 Astro 路由一致：去掉扩展名）
     preview_path: "posts/{{dirname}}/{{filename}}"
-    fields:
+    fields: &postsFields
       - name: title
         label: 标题
         widget: string
@@ -68,21 +76,21 @@ collections:
         widget: image
         required: false
         choose_url: true
-        media_folder: public/media/uploads
-        public_folder: /media/uploads
-        hint: 可上传或填相对路径；留空则无封面
+        media_folder: public/media/uploads/covers
+        public_folder: /media/uploads/covers
+        hint: 点击「Browse」可从 media/uploads/covers 已有的 14 张分类封面中选择，也可以拖拽/上传新图片；留空则无封面
 
       - name: category
         label: 分类
         widget: string
         required: false
-        hint: 例如 CSS / JavaScript / Vue / 前端 / 面试；新分类直接输入即可
+        hint: 现有分类：Vue / CSS / JavaScript / 前端 / 面试；请手动输入分类名称，支持任意新分类
 
       - name: tags
         label: 标签
         widget: list
         required: false
-        allow_add: true
+        hint: 常用标签：vue / javascript / 前端 / css / html 等；请手动输入标签并按回车添加
         field:
           name: tag
           label: 标签
@@ -109,3 +117,81 @@ collections:
         widget: markdown
         required: true
         hint: 支持 Markdown；代码块、列表等
+
+  - divider: true
+    name: posts-by-category-divider
+
+  - name: posts_vue
+    label: Vue
+    label_singular: 文章
+    description: 按分类快速查看「Vue」相关文章（仅浏览/编辑，新增文章请使用「全部文章」）。
+    icon: filter_alt
+    folder: src/content/posts
+    filter: { field: category, value: "Vue" }
+    create: false
+    delete: false
+    sortable_fields: *postsSortableFields
+    extension: md
+    format: frontmatter
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields: *postsFields
+
+  - name: posts_css
+    label: CSS
+    label_singular: 文章
+    description: 按分类快速查看「CSS」相关文章（仅浏览/编辑，新增文章请使用「全部文章」）。
+    icon: filter_alt
+    folder: src/content/posts
+    filter: { field: category, value: "CSS" }
+    create: false
+    delete: false
+    sortable_fields: *postsSortableFields
+    extension: md
+    format: frontmatter
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields: *postsFields
+
+  - name: posts_javascript
+    label: JavaScript
+    label_singular: 文章
+    description: 按分类快速查看「JavaScript」相关文章（仅浏览/编辑，新增文章请使用「全部文章」）。
+    icon: filter_alt
+    folder: src/content/posts
+    filter: { field: category, value: "JavaScript" }
+    create: false
+    delete: false
+    sortable_fields: *postsSortableFields
+    extension: md
+    format: frontmatter
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields: *postsFields
+
+  - name: posts_frontend
+    label: 前端
+    label_singular: 文章
+    description: 按分类快速查看「前端」相关文章（仅浏览/编辑，新增文章请使用「全部文章」）。
+    icon: filter_alt
+    folder: src/content/posts
+    filter: { field: category, value: "前端" }
+    create: false
+    delete: false
+    sortable_fields: *postsSortableFields
+    extension: md
+    format: frontmatter
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields: *postsFields
+
+  - name: posts_interview
+    label: 面试
+    label_singular: 文章
+    description: 按分类快速查看「面试」相关文章（仅浏览/编辑，新增文章请使用「全部文章」）。
+    icon: filter_alt
+    folder: src/content/posts
+    filter: { field: category, value: "面试" }
+    create: false
+    delete: false
+    sortable_fields: *postsSortableFields
+    extension: md
+    format: frontmatter
+    preview_path: "posts/{{dirname}}/{{filename}}"
+    fields: *postsFields

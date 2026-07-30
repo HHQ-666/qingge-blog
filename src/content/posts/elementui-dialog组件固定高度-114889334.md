@@ -1,6 +1,7 @@
 ---
 title: "elementui dialog组件固定高度"
 published: 2021-03-16
+image: /media/uploads/covers/vue.png
 description: "解决 ElementUI Dialog 高度不固定的问题，通过样式约束实现内容区可滚动、整体高度稳定的弹窗。"
 tags: ["css", "vue.js", "前端"]
 category: "Vue"

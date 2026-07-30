@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="zh-CN">
 	<head>
@@ -5,8 +6,8 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="robots" content="noindex, nofollow" />
 		<title>写作台 · 清哥的小屋</title>
+		<!-- ：避免 Astro 给选择器加 data-astro-cid，否则 Sveltia 动态 DOM 匹配不到，界面无法居中 -->
 		<style>
-			/* 关键：让 Sveltia absolute loading 有正确的视口参照 */
 			html {
 				height: 100%;
 			}
@@ -34,8 +35,7 @@
 				overflow-x: hidden;
 			}
 
-			/* CMS 挂载根必须撑满视口（absolute 子元素依赖此高度） */
-			body > div:not(#admin-boot),
+			body > div:not(#admin-gate):not(#admin-boot),
 			#nc-root,
 			.sui.app-shell {
 				position: relative !important;
@@ -47,12 +47,11 @@
 				height: 100dvh !important;
 			}
 
-			/*
-			 * Sveltia 欢迎/Loading：.container { position:absolute; inset:0 }
-			 * 父级高度不足时会整体偏上 → 强制 fixed 贴满视口并 flex 居中
-			 */
+			/* Sveltia 欢迎 / Loading / 登录：强制视口居中 */
 			.sui.app-shell > .container,
-			div.container[role="none"] {
+			div.container[role="none"],
+			.sui.app-shell .container:has(button),
+			.qingge-center-target {
 				position: fixed !important;
 				inset: 0 !important;
 				top: 0 !important;
@@ -87,7 +86,7 @@
 				transform: none !important;
 			}
 
-			/* 启动遮罩：CMS 可交互前盖住原生 loading */
+			#admin-gate,
 			#admin-boot {
 				position: fixed;
 				inset: 0;
@@ -106,11 +105,16 @@
 					opacity 0.35s ease,
 					visibility 0.35s ease;
 			}
+			#admin-gate.is-hidden,
 			#admin-boot.is-hidden {
 				opacity: 0;
 				visibility: hidden;
 				pointer-events: none;
 			}
+			#admin-boot {
+				z-index: 2147482990;
+			}
+			#admin-gate .icon,
 			#admin-boot .icon {
 				width: 4.5rem;
 				height: 4.5rem;
@@ -121,17 +125,19 @@
 				box-shadow:
 					0 10px 28px rgba(120, 72, 28, 0.12),
 					inset 0 1px 0 rgba(255, 255, 255, 0.75);
-				animation: float 2.4s ease-in-out infinite;
 			}
+			#admin-gate .icon svg,
 			#admin-boot .icon svg {
 				width: 2.35rem;
 				height: 2.35rem;
 				color: #c45c26;
 			}
+			#admin-gate h1,
 			#admin-boot h1 {
 				font-size: 1.35rem;
 				margin: 0.35rem 0 0;
 			}
+			#admin-gate p,
 			#admin-boot p {
 				margin: 0;
 				opacity: 0.72;
@@ -139,15 +145,98 @@
 				line-height: 1.55;
 				max-width: 22rem;
 			}
+			#admin-gate a,
 			#admin-boot a {
 				color: #c45c26;
 			}
+			#admin-gate code,
 			#admin-boot code {
 				font-size: 0.8rem;
 				background: rgba(0, 0, 0, 0.06);
 				padding: 0.1em 0.35em;
 				border-radius: 0.3em;
 			}
+
+			#admin-gate-form {
+				width: min(100%, 22rem);
+				display: flex;
+				flex-direction: column;
+				gap: 0.75rem;
+				text-align: left;
+				margin-top: 0.35rem;
+			}
+			#admin-gate-form label {
+				display: flex;
+				flex-direction: column;
+				gap: 0.35rem;
+				font-size: 0.82rem;
+				font-weight: 600;
+				color: #5c4a3a;
+			}
+			#admin-gate-form input[type="password"],
+			#admin-gate-form input[type="text"] {
+				width: 100%;
+				box-sizing: border-box;
+				border: 1px solid rgba(120, 72, 28, 0.18);
+				border-radius: 0.85rem;
+				padding: 0.72rem 0.9rem;
+				font-size: 0.95rem;
+				background: rgba(255, 255, 255, 0.88);
+				color: #3d342c;
+				outline: none;
+			}
+			#admin-gate-form input:focus {
+				border-color: rgba(196, 92, 38, 0.55);
+				box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.12);
+			}
+			#admin-gate-form .row-check {
+				flex-direction: row;
+				align-items: center;
+				gap: 0.5rem;
+				font-weight: 500;
+				opacity: 0.85;
+			}
+			#admin-gate-form .row-check input {
+				width: 1rem;
+				height: 1rem;
+			}
+			#admin-gate-form button[type="submit"] {
+				margin-top: 0.15rem;
+				border: 0;
+				border-radius: 0.9rem;
+				padding: 0.8rem 1rem;
+				font-size: 0.95rem;
+				font-weight: 700;
+				color: #fff;
+				background: linear-gradient(160deg, #d9783a, #c45c26);
+				cursor: pointer;
+				box-shadow: 0 10px 22px rgba(196, 92, 38, 0.22);
+			}
+			#admin-gate-form button[type="submit"]:disabled {
+				opacity: 0.65;
+				cursor: wait;
+			}
+			#admin-gate-error {
+				min-height: 1.25rem;
+				margin: 0;
+				color: #b42318;
+				font-size: 0.82rem;
+				font-weight: 600;
+				opacity: 1;
+				text-align: center;
+			}
+			#admin-gate-error:empty {
+				display: none;
+			}
+			#admin-gate .hint {
+				opacity: 0.55 !important;
+				font-size: 0.78rem !important;
+				max-width: 22rem;
+			}
+			#admin-gate .token-wrap.is-hidden {
+				display: none;
+			}
+
 			#admin-boot .dots {
 				display: inline-flex;
 				gap: 0.35rem;
@@ -159,18 +248,13 @@
 				border-radius: 999px;
 				background: #c45c26;
 				opacity: 0.35;
-				animation: dot 1.05s ease-in-out infinite;
+				animation: admin-dot 1.05s ease-in-out infinite;
 			}
 			#admin-boot .dots span:nth-child(2) {
 				animation-delay: 0.15s;
 			}
 			#admin-boot .dots span:nth-child(3) {
 				animation-delay: 0.3s;
-			}
-			#admin-boot .meta {
-				margin-top: 0.65rem !important;
-				opacity: 0.5 !important;
-				font-size: 0.8rem !important;
 			}
 			#admin-boot-retry {
 				color: #c45c26;
@@ -181,16 +265,7 @@
 			#admin-boot.is-failed .dots {
 				display: none;
 			}
-			@keyframes float {
-				0%,
-				100% {
-					transform: translateY(0);
-				}
-				50% {
-					transform: translateY(-6px);
-				}
-			}
-			@keyframes dot {
+			@keyframes admin-dot {
 				0%,
 				80%,
 				100% {
@@ -203,7 +278,6 @@
 				}
 			}
 			@media (prefers-reduced-motion: reduce) {
-				#admin-boot .icon,
 				#admin-boot .dots span {
 					animation: none;
 				}
@@ -211,7 +285,54 @@
 		</style>
 	</head>
 	<body>
-		<div id="admin-boot" role="status" aria-live="polite">
+		<div id="admin-gate" role="dialog" aria-modal="true" aria-labelledby="admin-gate-title">
+			<div class="icon" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+					<path
+						d="M12 3.2 3.5 10.1c-.3.25-.4.65-.25 1 .15.35.5.55.9.55H6v7.1c0 .55.45 1 1 1h3.2v-4.4c0-.55.45-1 1-1h1.6c.55 0 1 .45 1 1V19.75H17c.55 0 1-.45 1-1v-7.1h1.85c.4 0 .75-.2.9-.55.15-.35.05-.75-.25-1L12 3.2Z"
+					></path>
+				</svg>
+			</div>
+			<h1 id="admin-gate-title">写作台 · 清哥的小屋</h1>
+			<p>输入口令进入发布后台。保存文章会提交到 GitHub，Vercel 自动上线。</p>
+			<form id="admin-gate-form" autocomplete="on">
+				<label>
+					写作口令
+					<input
+						id="admin-gate-password"
+						name="password"
+						type="password"
+						required
+						placeholder="输入写作口令"
+						autocomplete="current-password"
+					/>
+				</label>
+				<label id="admin-token-wrap" class="token-wrap">
+					GitHub Token
+					<input
+						id="admin-gate-token"
+						name="token"
+						type="password"
+						placeholder="ghp_… 或 github_pat_…"
+						autocomplete="off"
+						spellcheck="false"
+					/>
+				</label>
+				<label class="row-check">
+					<input id="admin-gate-remember" type="checkbox" checked />
+					在本机记住 Token（仅你自己的电脑）
+				</label>
+				<p id="admin-gate-error" role="alert"></p>
+				<button type="submit" id="admin-gate-submit">进入写作台</button>
+			</form>
+			<p class="hint">
+				Token 在
+				<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">GitHub → Settings → Tokens</a>
+				创建，勾选 <code>repo</code> 权限即可。访客请返回 <a href="/">首页</a>。
+			</p>
+		</div>
+
+		<div id="admin-boot" class="is-hidden" role="status" aria-live="polite" hidden>
 			<div class="icon" aria-hidden="true">
 				<svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
 					<path
@@ -220,26 +341,160 @@
 				</svg>
 			</div>
 			<h1>写作台 · 清哥的小屋</h1>
-			<p id="admin-boot-status">正在加载 Sveltia CMS…</p>
+			<p id="admin-boot-status">正在进入发布后台…</p>
 			<div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
-			<p>仅仓库协作者可登录。访客请返回 <a href="/">首页</a>。</p>
-			<p class="meta">首次使用需配置 GitHub OAuth（见 <code>docs/DEPLOY.md</code>）。</p>
 			<a id="admin-boot-retry" class="is-hidden" href="/admin/">重试</a>
 		</div>
 
-		<!-- 勿加 type="module"（Sveltia 文档要求） -->
-		<script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
 		<script>
+			// 与 src/config.ts authorGate.secret 保持一致
+			var gateSecret = "qingge666";
+			var githubRepo = "HHQ-666/qingge-blog";
 			(function () {
+				var GATE_SESSION_KEY = "qingge-admin-gate";
+				var USER_KEY = "sveltia-cms.user";
+				var TOKEN_KEY = "qingge-admin-gh-token";
+				var CMS_SRC = "https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js";
+				var LOGIN_SCREEN_GRACE_MS = 10000;
+				var SORT_PREFERENCE_MIGRATION_KEY = "qingge-admin-sort-v1";
+
+				var gate = document.getElementById("admin-gate");
 				var boot = document.getElementById("admin-boot");
+				var form = document.getElementById("admin-gate-form");
+				var passwordInput = document.getElementById("admin-gate-password");
+				var tokenInput = document.getElementById("admin-gate-token");
+				var tokenWrap = document.getElementById("admin-token-wrap");
+				var rememberInput = document.getElementById("admin-gate-remember");
+				var errorEl = document.getElementById("admin-gate-error");
+				var submitBtn = document.getElementById("admin-gate-submit");
+
 				var centerTimer = 0;
 				var readyTimer = 0;
 				var failureTimer = 0;
 				var observer = null;
+				var cmsStarted = false;
+				var loginScreenStartedAt = 0;
+
+				function setError(message) {
+					if (errorEl) errorEl.textContent = message || "";
+				}
+
+				function readJson(key) {
+					try {
+						var raw = localStorage.getItem(key);
+						return raw ? JSON.parse(raw) : null;
+					} catch (e) {
+						return null;
+					}
+				}
+
+				function writeJson(key, value) {
+					localStorage.setItem(key, JSON.stringify(value));
+				}
+
+				function savedToken() {
+					try {
+						return localStorage.getItem(TOKEN_KEY) || "";
+					} catch (e) {
+						return "";
+					}
+				}
+
+				function resetSavedPostView() {
+					return new Promise(function (resolve) {
+						try {
+							if (localStorage.getItem(SORT_PREFERENCE_MIGRATION_KEY) === "1" || !window.indexedDB) {
+								resolve();
+								return;
+							}
+
+							var request = window.indexedDB.open("github:" + githubRepo);
+							request.onerror = function () {
+								resolve();
+							};
+							request.onsuccess = function () {
+								var database = request.result;
+								if (!database.objectStoreNames.contains("ui-settings")) {
+									database.close();
+									localStorage.setItem(SORT_PREFERENCE_MIGRATION_KEY, "1");
+									resolve();
+									return;
+								}
+
+								var transaction = database.transaction("ui-settings", "readwrite");
+								transaction.objectStore("ui-settings").delete("contents-view");
+								transaction.oncomplete = function () {
+									database.close();
+									localStorage.setItem(SORT_PREFERENCE_MIGRATION_KEY, "1");
+									resolve();
+								};
+								transaction.onerror = function () {
+									database.close();
+									resolve();
+								};
+							};
+						} catch (e) {
+							resolve();
+						}
+					});
+				}
+
+				function existingUser() {
+					var user = readJson(USER_KEY);
+					if (user && typeof user.backendName === "string" && typeof user.token === "string") return user;
+					return null;
+				}
+
+				function sessionUnlocked() {
+					try {
+						return sessionStorage.getItem(GATE_SESSION_KEY) === "1";
+					} catch (e) {
+						return false;
+					}
+				}
+
+				function unlockSession() {
+					try {
+						sessionStorage.setItem(GATE_SESSION_KEY, "1");
+					} catch (e) {}
+				}
+
+				function showGate(needToken) {
+					if (tokenWrap) {
+						if (needToken) tokenWrap.classList.remove("is-hidden");
+						else tokenWrap.classList.add("is-hidden");
+					}
+					if (tokenInput) {
+						tokenInput.required = Boolean(needToken);
+						if (!needToken) tokenInput.value = "";
+						else if (!tokenInput.value) tokenInput.value = savedToken();
+					}
+					if (gate) gate.classList.remove("is-hidden");
+					if (boot) {
+						boot.classList.add("is-hidden");
+						boot.hidden = true;
+					}
+					if (passwordInput) passwordInput.focus();
+				}
+
+				function hideGate() {
+					if (!gate) return;
+					gate.classList.add("is-hidden");
+				}
+
+				function showBoot(statusText) {
+					if (!boot) return;
+					boot.hidden = false;
+					boot.classList.remove("is-hidden", "is-failed");
+					var status = document.getElementById("admin-boot-status");
+					var retry = document.getElementById("admin-boot-retry");
+					if (status) status.textContent = statusText || "正在进入发布后台…";
+					if (retry) retry.classList.add("is-hidden");
+				}
 
 				function forceCenter(el) {
 					if (!el) return;
-					// 运行时再钉一次，防止 Sveltia 后续改写 style
+					el.classList.add("qingge-center-target");
 					el.style.setProperty("position", "fixed", "important");
 					el.style.setProperty("inset", "0", "important");
 					el.style.setProperty("top", "0", "important");
@@ -257,30 +512,46 @@
 					el.style.setProperty("z-index", "100", "important");
 				}
 
-				function nativeLoaderContainer() {
-					var elements = document.querySelectorAll(".sui.app-shell p, .sui.app-shell div, .sui.app-shell span");
-					for (var i = 0; i < elements.length; i++) {
-						var element = elements[i];
-						var text = (element.textContent || "").trim();
-						if (text.indexOf("Loading Site Data") === -1) continue;
+				function textOf(el) {
+					return ((el && el.textContent) || "").replace(/\s+/g, " ").trim();
+				}
 
-						var childHasLoaderText = false;
-						for (var j = 0; j < element.children.length; j++) {
-							if ((element.children[j].textContent || "").indexOf("Loading Site Data") !== -1) {
-								childHasLoaderText = true;
+				function findSplashContainer() {
+					var shell = document.querySelector(".sui.app-shell");
+					if (!shell) return null;
+					var markers = ["Loading Site Data", "Sign In", "Sign in", "Access Token", "Sveltia CMS"];
+					var nodes = shell.querySelectorAll("p, div, span, h1, h2, button");
+					for (var i = 0; i < nodes.length; i++) {
+						var node = nodes[i];
+						var text = textOf(node);
+						if (!text) continue;
+						var hit = false;
+						for (var m = 0; m < markers.length; m++) {
+							if (text.indexOf(markers[m]) !== -1) {
+								hit = true;
 								break;
 							}
 						}
-						if (!childHasLoaderText) return element.closest(".container");
+						if (!hit) continue;
+						var container = node.closest(".container") || node.closest("[class*='container']");
+						if (container) return container;
+					}
+					// 兜底：壳里第一个 absolute/fixed 大容器
+					var candidates = shell.querySelectorAll("div");
+					for (var j = 0; j < candidates.length; j++) {
+						var style = window.getComputedStyle(candidates[j]);
+						if ((style.position === "absolute" || style.position === "fixed") && candidates[j].childElementCount > 0) {
+							return candidates[j];
+						}
 					}
 					return null;
 				}
 
 				function scanCenter() {
-					forceCenter(nativeLoaderContainer());
-
-					// 根节点高度兜底
-					var roots = document.querySelectorAll("body > div:not(#admin-boot), #nc-root, .sui.app-shell");
+					forceCenter(findSplashContainer());
+					var roots = document.querySelectorAll(
+						"body > div:not(#admin-gate):not(#admin-boot), #nc-root, .sui.app-shell",
+					);
 					for (var k = 0; k < roots.length; k++) {
 						var r = roots[k];
 						r.style.setProperty("position", "relative", "important");
@@ -290,12 +561,36 @@
 					}
 				}
 
-				function cmsReady() {
-					if (nativeLoaderContainer()) return false;
+				function isLoginScreen() {
 					var shell = document.querySelector(".sui.app-shell");
+					if (!shell) return false;
+					var text = textOf(shell);
+					return (
+						text.indexOf("Sign In with GitHub") !== -1 ||
+						text.indexOf("Sign In Using Access Token") !== -1 ||
+						text.indexOf("Sign in with GitHub") !== -1
+					);
+				}
+
+				function loginScreenTimedOut() {
+					if (!isLoginScreen()) {
+						loginScreenStartedAt = 0;
+						return false;
+					}
+					if (!loginScreenStartedAt) loginScreenStartedAt = Date.now();
+					return Date.now() - loginScreenStartedAt >= LOGIN_SCREEN_GRACE_MS;
+				}
+
+				function cmsReady() {
+					if (findSplashContainer() && isLoginScreen()) return false;
+					if (isLoginScreen()) return false;
+					var shell = document.querySelector(".sui.app-shell");
+					if (!shell) return false;
+					// 真正后台：侧栏/工具栏/主内容，而不是登录按钮
 					return Boolean(
-						shell &&
-							shell.querySelector("button, [role='button'], input, .toolbar, [role='main']"),
+						shell.querySelector(
+							"[role='main'], nav, .toolbar, [class*='sidebar'], [class*='entry-list'], [class*='collection']",
+						),
 					);
 				}
 
@@ -304,6 +599,10 @@
 					if (readyTimer) clearInterval(readyTimer);
 					if (failureTimer) clearTimeout(failureTimer);
 					if (observer) observer.disconnect();
+					centerTimer = 0;
+					readyTimer = 0;
+					failureTimer = 0;
+					observer = null;
 				}
 
 				function hideBoot() {
@@ -311,41 +610,217 @@
 					stopWatching();
 					boot.classList.add("is-hidden");
 					setTimeout(function () {
-						if (boot && boot.parentNode) boot.parentNode.removeChild(boot);
+						if (boot && boot.parentNode) {
+							boot.hidden = true;
+						}
 					}, 400);
 				}
 
-				function showFailure() {
-					if (!boot || boot.classList.contains("is-hidden")) return;
+				function showFailure(message) {
+					if (!boot) return;
 					stopWatching();
+					boot.hidden = false;
+					boot.classList.remove("is-hidden");
 					boot.classList.add("is-failed");
 					var status = document.getElementById("admin-boot-status");
 					var retry = document.getElementById("admin-boot-retry");
-					if (status) status.textContent = "写作台加载失败，请检查网络后重试。";
+					if (status) status.textContent = message || "写作台加载失败，请检查网络后重试。";
 					if (retry) retry.classList.remove("is-hidden");
 				}
 
-				// 持续纠正居中（Sveltia 挂载后 DOM 会变）
-				scanCenter();
-				centerTimer = setInterval(scanCenter, 200);
-
-				if (typeof MutationObserver !== "undefined") {
-					observer = new MutationObserver(function () {
+				function startWatching() {
+					stopWatching();
+					loginScreenStartedAt = 0;
+					scanCenter();
+					centerTimer = setInterval(scanCenter, 200);
+					if (typeof MutationObserver !== "undefined") {
+						observer = new MutationObserver(function () {
+							scanCenter();
+							if (cmsReady()) hideBoot();
+							// Sveltia 启动时会短暂渲染登录页，再异步恢复已保存的 Token。
+							if (loginScreenTimedOut()) {
+								showFailure("自动登录未成功。请返回重试并检查 Token 是否有效、是否勾选 repo 权限。");
+							}
+						});
+						observer.observe(document.documentElement, {
+							childList: true,
+							subtree: true,
+							characterData: true,
+						});
+					}
+					readyTimer = setInterval(function () {
 						scanCenter();
-						if (cmsReady()) {
-							hideBoot();
+						if (cmsReady()) hideBoot();
+						else if (loginScreenTimedOut()) {
+							showFailure("自动登录未成功。请返回重试并检查 Token 是否有效、是否勾选 repo 权限。");
 						}
-					});
-					observer.observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+					}, 150);
+					failureTimer = window.setTimeout(function () {
+						if (!cmsReady()) {
+							showFailure("写作台加载超时。可刷新重试，或检查网络 / Token。");
+						}
+					}, 45000);
 				}
 
-				readyTimer = setInterval(function () {
-					scanCenter();
-					if (cmsReady()) {
-						hideBoot();
+				function ghHeaders(token) {
+					return {
+						Accept: "application/vnd.github+json",
+						Authorization: "Bearer " + token,
+						"X-GitHub-Api-Version": "2022-11-28",
+					};
+				}
+
+				async function buildUser(token) {
+					var userRes = await fetch("https://api.github.com/user", {
+						headers: ghHeaders(token),
+						credentials: "omit",
+					});
+					if (userRes.status === 401 || userRes.status === 403) {
+						throw new Error("Token 无效或权限不足，请重新创建并勾选 repo。");
 					}
-				}, 150);
-				failureTimer = window.setTimeout(showFailure, 30000);
+					if (!userRes.ok) throw new Error("无法验证 GitHub 账号（HTTP " + userRes.status + "）。");
+					var profile = await userRes.json();
+
+					var repoRes = await fetch("https://api.github.com/repos/" + githubRepo, {
+						headers: ghHeaders(token),
+						credentials: "omit",
+					});
+					if (repoRes.status === 404) {
+						throw new Error("Token 访问不到仓库 " + githubRepo + "，请确认仓库存在且 Token 有权限。");
+					}
+					if (!repoRes.ok) throw new Error("无法校验仓库权限（HTTP " + repoRes.status + "）。");
+					var repo = await repoRes.json();
+					if (!repo.permissions || !repo.permissions.push) {
+						throw new Error("当前 Token 对仓库没有写权限，请使用具备 repo 权限的 Token。");
+					}
+
+					return {
+						backendName: "github",
+						id: profile.id,
+						name: profile.name || profile.login,
+						login: profile.login,
+						email: profile.email || null,
+						avatarURL: profile.avatar_url,
+						profileURL: profile.html_url,
+						bot: Boolean(profile.type === "Bot"),
+						token: token,
+					};
+				}
+
+				function loadCmsScript() {
+					return new Promise(function (resolve, reject) {
+						if (window.CMS || document.querySelector('script[data-qingge-sveltia="1"]')) {
+							resolve();
+							return;
+						}
+						var script = document.createElement("script");
+						script.src = CMS_SRC;
+						script.async = true;
+						script.dataset.qinggeSveltia = "1";
+						script.onload = function () {
+							resolve();
+						};
+						script.onerror = function () {
+							reject(new Error("Sveltia CMS 脚本加载失败"));
+						};
+						document.body.appendChild(script);
+					});
+				}
+
+				async function enterCms(user) {
+					if (cmsStarted) return;
+					cmsStarted = true;
+					await resetSavedPostView();
+					writeJson(USER_KEY, user);
+					unlockSession();
+					hideGate();
+					showBoot("正在进入发布后台…");
+					startWatching();
+					try {
+						await loadCmsScript();
+					} catch (e) {
+						cmsStarted = false;
+						showFailure((e && e.message) || "CMS 脚本加载失败");
+					}
+				}
+
+				async function tryAutoEnter() {
+					if (!sessionUnlocked()) return false;
+					var user = existingUser();
+					if (!user || !user.token) return false;
+					try {
+						// 轻量复验，避免过期 token 卡在 Loading
+						var fresh = await buildUser(user.token);
+						await enterCms(fresh);
+						return true;
+					} catch (e) {
+						try {
+							localStorage.removeItem(USER_KEY);
+						} catch (err) {}
+						return false;
+					}
+				}
+
+				async function onSubmit(event) {
+					event.preventDefault();
+					setError("");
+					var password = (passwordInput && passwordInput.value) || "";
+					if (password !== gateSecret) {
+						setError("口令不正确。");
+						return;
+					}
+
+					var token = ((tokenInput && tokenInput.value) || "").trim();
+					if (!token) token = savedToken();
+					if (!token) {
+						var user = existingUser();
+						if (user && user.token) token = user.token;
+					}
+					if (!token) {
+						if (tokenWrap) tokenWrap.classList.remove("is-hidden");
+						if (tokenInput) tokenInput.required = true;
+						setError("请填写 GitHub Token（首次进入需要）。");
+						return;
+					}
+
+					if (submitBtn) {
+						submitBtn.disabled = true;
+						submitBtn.textContent = "验证中…";
+					}
+					try {
+						var user = await buildUser(token);
+						if (rememberInput && rememberInput.checked) {
+							try {
+								localStorage.setItem(TOKEN_KEY, token);
+							} catch (e) {}
+						} else {
+							try {
+								localStorage.removeItem(TOKEN_KEY);
+							} catch (e) {}
+						}
+						await enterCms(user);
+					} catch (e) {
+						setError((e && e.message) || "登录失败，请重试。");
+						if (tokenWrap) tokenWrap.classList.remove("is-hidden");
+						if (tokenInput) tokenInput.required = true;
+					} finally {
+						if (submitBtn) {
+							submitBtn.disabled = false;
+							submitBtn.textContent = "进入写作台";
+						}
+					}
+				}
+
+				if (form) form.addEventListener("submit", onSubmit);
+
+				// 初始：有记住的 token / 已登录用户时，口令通过后可不重复填 token
+				var hasToken = Boolean(savedToken() || (existingUser() && existingUser().token));
+				if (hasToken && tokenWrap) tokenWrap.classList.add("is-hidden");
+				if (hasToken && tokenInput) tokenInput.required = false;
+
+				tryAutoEnter().then(function (ok) {
+					if (!ok) showGate(!hasToken);
+				});
 			})();
 		</script>
 	</body>

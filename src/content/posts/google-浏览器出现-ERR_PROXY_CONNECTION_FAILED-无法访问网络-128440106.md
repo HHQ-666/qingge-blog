@@ -1,6 +1,7 @@
 ---
 title: "google 浏览器出现 ERR_PROXY_CONNECTION_FAILED 无法访问网络"
 published: 2022-12-26
+image: /media/uploads/covers/frontend-general.png
 description: "记录 Chrome 出现 ERR_PROXY_CONNECTION_FAILED 无法上网的排查过程，给出代理相关的解决办法。"
 tags: ["网络"]
 category: "前端"

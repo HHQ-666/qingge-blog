@@ -1,6 +1,7 @@
 ---
 title: "Elementui el-input 输入框校验以及表单校验"
 published: 2021-03-25
+image: /media/uploads/covers/vue.png
 description: "汇总 ElementUI el-input 与表单校验的常用正则与实践，覆盖数字、整数、手机号等日常输入限制。"
 tags: ["vue.js", "前端"]
 category: "Vue"

@@ -1,6 +1,7 @@
 ---
 title: "elementui el-pagination 分页组件封装"
 published: 2021-04-20
+image: /media/uploads/covers/vue.png
 description: "封装 ElementUI el-pagination 分页组件，统一表格场景的前后端分页用法，减少重复配置。"
 tags: ["javascript", "js", "vue.js", "css", "html"]
 category: "Vue"

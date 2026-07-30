@@ -1,6 +1,7 @@
 ---
 title: "element table组件用css实现鼠标进入表格当前行显示删除图片"
 published: 2020-11-16
+image: /media/uploads/covers/vue.png
 description: "用 CSS 实现 Element Table 鼠标悬停当前行显示删除图标，兼顾交互反馈与布局不跳动。"
 tags: ["css", "elementui"]
 category: "Vue"

@@ -1,6 +1,7 @@
 ---
 title: "vue2之 vue-i18n 插件报错-Uncaught TypeError: Cannot read properties of undefined (reading ‘0‘)"
 published: 2023-09-18
+image: /media/uploads/covers/vue.png
 description: "排查 Vue2 使用 vue-i18n 时 Cannot read properties of undefined 报错，给出版本与初始化相关修复。"
 tags: ["vue.js", "前端", "javascript"]
 category: "Vue"

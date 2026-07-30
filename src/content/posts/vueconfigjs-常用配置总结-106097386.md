@@ -1,6 +1,7 @@
 ---
 title: "vue.config.js 常用配置总结"
 published: 2020-05-13
+image: /media/uploads/covers/vue.png
 description: "总结 vue.config.js 常用配置项，覆盖代理、打包、别名等日常开发高频设置。"
 tags: ["vue.js"]
 category: "Vue"

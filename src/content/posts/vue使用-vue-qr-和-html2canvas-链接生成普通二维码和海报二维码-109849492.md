@@ -1,6 +1,7 @@
 ---
 title: "vue使用 vue-qr 和 html2canvas 链接生成普通二维码和海报二维码"
 published: 2020-11-20
+image: /media/uploads/covers/vue.png
 description: "使用 vue-qr 与 html2canvas，把链接生成普通二维码与可下载的海报二维码。"
 tags: ["vue"]
 category: "Vue"
