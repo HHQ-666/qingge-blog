@@ -100,7 +100,7 @@ export const navBarConfig: NavBarConfig = {
 export const profileConfig: ProfileConfig = {
 	avatar: "assets/images/qingge-avatar.jpg", // Relative to the /src directory. Relative to the /public directory if it starts with '/'
 	name: "清阿哥",
-	bio: "欢迎来到清哥的小屋 · 记录成长与思考",
+	bio: "欢迎来到清哥的小屋 · 记录成长思考",
 	links: [
 		{
 			name: "GitHub",
@@ -148,14 +148,14 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 
 /**
  * 作者写作台入口（仅自己可见）
- * - 浏览器控制台执行：localStorage.setItem("qingge-author","你的口令") 后刷新
- * - 或在欢迎区小屋图标上连点 5 次解锁
- * - 解锁后仅显示顶部写作图标（新窗口打开）
- * 真正写权限仍靠 GitHub，口令只控制入口显示
+ * - /admin/ 使用同一口令 + GitHub Token 进入发布后台
+ * - 浏览器控制台：localStorage.setItem("qingge-author","你的口令") 后刷新
+ * - 或在欢迎区小屋图标上连点 5 次，解锁顶部写作图标
+ * 口令挡误入；真正写仓库靠 GitHub Token（不会提交进 Git）
  */
 export const authorGate = {
-	/** 与 localStorage 中 qingge-author 比对；改成你自己的口令 */
-	secret: "qingge-write",
+	/** 写作台口令；请改成自己的，并与 /admin 登录一致 */
+	secret: "qingge666",
 	/** 写作台路径 */
 	adminPath: "/admin/",
 };
@@ -246,8 +246,8 @@ export const funConfig = {
 		/** 歌单缓存小时数，刷新页面直接用缓存 */
 		cacheHours: 6,
 		/** 主音源代理；遇到限流或服务故障时会自动尝试备用代理。 */
-		api: "https://api.i-meto.com/meting/api",
-		fallbackApis: ["https://api.injahow.cn/meting/"],
+		api: "https://api.injahow.cn/meting/",
+		fallbackApis: ["https://api.i-meto.com/meting/api"],
 		/**
 		 * 歌单。优先放实测可完整播放的曲目。
 		 * 周杰伦部分歌曲接口常被墙，已从默认列表去掉，避免点了没声。

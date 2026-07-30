@@ -258,6 +258,27 @@ function qrTheme(name: string) {
 			document.addEventListener("click", function (e) {
 				var t = e.target;
 				if (!t || !t.closest) return;
+				
+				var mailLink = t.closest('a[href^="mailto:"]');
+				if (mailLink) {
+					e.preventDefault();
+					e.stopPropagation();
+					var mail = mailLink.getAttribute("href").replace("mailto:", "");
+					var msg = "邮箱 " + mail + " 已复制到剪贴板";
+					if (navigator.clipboard && navigator.clipboard.writeText) {
+						navigator.clipboard.writeText(mail).then(function () { showToast(msg); });
+					} else {
+						var input = document.createElement("input");
+						input.value = mail;
+						document.body.appendChild(input);
+						input.select();
+						document.execCommand("copy");
+						document.body.removeChild(input);
+						showToast(msg);
+					}
+					return;
+				}
+
 				var trigger = t.closest(".profile-qr-trigger");
 				if (trigger) {
 					e.preventDefault();
@@ -270,6 +291,24 @@ function qrTheme(name: string) {
 					closeModal();
 				}
 			});
+
+			function showToast(msg) {
+				var toast = document.createElement("div");
+				toast.className = "fixed top-6 left-1/2 -translate-x-1/2 z-[99999] bg-[var(--card-bg)] text-[var(--btn-content)] px-4 py-2.5 rounded-xl shadow-[0_8px_16px_-4px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.5)] border border-black/5 dark:border-white/10 transition-all duration-300 font-medium text-sm flex items-center gap-2 scale-90 opacity-0 pointer-events-none";
+				toast.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="1.2em" height="1.2em" viewBox="0 0 24 24"><path fill="var(--primary)" d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10s10-4.5 10-10S17.5 2 12 2m-2 15l-5-5l1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9Z"/></svg> ' + msg;
+				document.body.appendChild(toast);
+				
+				requestAnimationFrame(function() {
+					toast.classList.remove("scale-90", "opacity-0");
+					toast.classList.add("scale-100", "opacity-100");
+				});
+
+				setTimeout(function () {
+					toast.classList.remove("scale-100", "opacity-100");
+					toast.classList.add("scale-90", "opacity-0");
+					setTimeout(function () { toast.remove(); }, 300);
+				}, 2500);
+			}
 
 			document.addEventListener("keydown", function (e) {
 				if (e.key === "Escape") closeModal();

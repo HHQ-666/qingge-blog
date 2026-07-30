@@ -12,7 +12,7 @@ const enabled = funConfig.hitokoto;
 				<Icon name="material-symbols:format-quote-rounded" class="text-[1.15rem] text-[var(--primary)]" />
 				<span class="text-sm font-semibold tracking-wide">今日一言</span>
 			</div>
-			<blockquote id="hitokoto-text" class="hitokoto-card__text text-75 text-sm leading-snug min-h-[1.4em]">
+			<blockquote id="hitokoto-text" class="hitokoto-card__text text-75 text-sm leading-snug min-h-[2.75em]">
 				加载中…
 			</blockquote>
 			<div class="mt-2 flex items-center justify-between gap-2">
@@ -36,30 +36,28 @@ const enabled = funConfig.hitokoto;
 		<script is:inline>
 			(function () {
 				var LOCAL_QUOTES = [
-					{ t: "山重水复疑无路，柳暗花明又一村。", f: "陆游" },
-					{ t: "行到水穷处，坐看云起时。", f: "王维" },
-					{ t: "海内存知己，天涯若比邻。", f: "王勃" },
-					{ t: "长风破浪会有时，直挂云帆济沧海。", f: "李白" },
-					{ t: "落红不是无情物，化作春泥更护花。", f: "龚自珍" },
-					{ t: "不积跬步，无以至千里。", f: "荀子" },
-					{ t: "千里之行，始于足下。", f: "老子" },
-					{ t: "纸上得来终觉浅，绝知此事要躬行。", f: "陆游" },
-					{ t: "问渠那得清如许，为有源头活水来。", f: "朱熹" },
-					{ t: "路漫漫其修远兮，吾将上下而求索。", f: "屈原" },
-					{ t: "采菊东篱下，悠然见南山。", f: "陶渊明" },
-					{ t: "但愿人长久，千里共婵娟。", f: "苏轼" },
-					{ t: "会当凌绝顶，一览众山小。", f: "杜甫" },
-					{ t: "莫听穿林打叶声，何妨吟啸且徐行。", f: "苏轼" },
-					{ t: "春风又绿江南岸，明月何时照我还。", f: "王安石" },
-					{ t: "业精于勤，荒于嬉。", f: "韩愈" },
-					{ t: "博观而约取，厚积而薄发。", f: "苏轼" },
+					{ t: "在互联网上，没有人知道你是一条狗。", f: "彼得·施泰纳" },
+					{ t: "代码如诗，贵在留白。", f: "清阿哥" },
+					{ t: "过早的优化是万恶之源。", f: "高德纳" },
+					{ t: "任何傻瓜都能写出计算机可以理解的代码。好的程序员能写出人能读懂的代码。", f: "马丁·福勒" },
+					{ t: "理论是你知道是这样，但它却不好用。实践是它很好用，但你不知道是为什么。", f: "爱因斯坦" },
+					{ t: "Talk is cheap. Show me the code.", f: "林纳斯·托瓦兹" },
+					{ t: "Stay hungry, stay foolish.", f: "史蒂夫·乔布斯" },
+					{ t: "不要去重复造轮子，除非你想学造轮子。", f: "佚名" },
+					{ t: "软件在能够复用前必须先能用。", f: "拉尔夫·约翰逊" },
+					{ t: "种一棵树最好的时间是十年前，其次是现在。", f: "丹比萨·莫约" },
+					{ t: "如果你不知道你要去哪里，那么任何一条路都能带你到达。", f: "刘易斯·卡罗尔" },
+					{ t: "保持敬畏，保持热爱。", f: "佚名" },
+					{ t: "优秀的代码是它自己最好的文档。", f: "史蒂夫·麦克康奈尔" },
+					{ t: "世界上只有两种编程语言：一种是天天挨骂的，另一种是没人用的。", f: "本贾尼·斯特劳斯特卢普" },
+					{ t: "简单不先于复杂，而是在复杂之后。", f: "艾伦·佩利" },
+					{ t: "当你在凝视深渊的时候，深渊也在凝视着你。", f: "尼采" },
+					{ t: "黑夜无论怎样悠长，白昼总会到来。", f: "莎士比亚" },
+					{ t: "真正的大师永远怀着一颗学徒的心。", f: "易大师" },
+					{ t: "生活不是等待暴风雨过去，而是学会在雨中翩翩起舞。", f: "薇薇安·格林" },
 					{ t: "知之者不如好之者，好之者不如乐之者。", f: "孔子" },
-					{ t: "工欲善其事，必先利其器。", f: "孔子" },
-					{ t: "读万卷书，行万里路。", f: "董其昌" },
-					{ t: "天行健，君子以自强不息。", f: "周易" },
-					{ t: "宝剑锋从磨砺出，梅花香自苦寒来。", f: "警世贤文" },
-					{ t: "一寸光阴一寸金。", f: "王贞白" },
-					{ t: "有志者事竟成。", f: "后汉书" },
+					{ t: "人类的赞歌就是勇气的赞歌。", f: "威廉·安东尼·齐贝林" },
+					{ t: "你必须非常努力，才能看起来毫不费力。", f: "鸭子定律" }
 				];
 				var MAX_LEN = 32;
 				var lastIdx = -1;
@@ -71,43 +69,109 @@ const enabled = funConfig.hitokoto;
 					return LOCAL_QUOTES[i];
 				}
 
-				async function loadHitokoto() {
-					var textEl = document.getElementById("hitokoto-text");
-					var fromEl = document.getElementById("hitokoto-from");
-					if (!textEl || !fromEl) return;
-
-					var useNet = Math.random() < 0.28;
-					if (useNet) {
-						try {
-							var controller = new AbortController();
-							var timeout = window.setTimeout(function () { controller.abort(); }, 2800);
-							var res = await fetch("https://v1.hitokoto.cn/?c=i&c=k&c=d&encode=json", {
-								signal: controller.signal,
-							});
-							window.clearTimeout(timeout);
-							if (res.ok) {
-								var data = await res.json();
-								var hit = String(data.hitokoto || "").trim();
-								if (hit && hit.length <= MAX_LEN + 4) {
-									textEl.textContent = hit.length > MAX_LEN ? hit.slice(0, MAX_LEN - 1) + "…" : hit;
-									fromEl.textContent = "— " + (data.from_who || data.from || "佚名");
-									return;
-								}
+				var typeToken = 0;
+				async function sleep(ms, tokenObj, expectedToken) {
+					return new Promise(function(resolve) {
+						var t = 0;
+						var step = 30;
+						var timer = setInterval(function() {
+							if (tokenObj.val !== expectedToken) {
+								clearInterval(timer);
+								resolve(false);
 							}
-						} catch (_) {}
-					}
-					var q = pickLocal();
-					textEl.textContent = q.t;
-					fromEl.textContent = "— " + q.f;
+							t += step;
+							if (t >= ms) {
+								clearInterval(timer);
+								resolve(true);
+							}
+						}, step);
+					});
 				}
 
-				loadHitokoto();
-				var btn = document.getElementById("hitokoto-refresh");
-				if (btn) btn.addEventListener("click", loadHitokoto);
+				async function startTypeWriter() {
+					typeToken++;
+					var currentToken = typeToken;
+					var tokenObj = { val: currentToken };
+
+					var els = [
+						document.getElementById("hitokoto-text"),
+						document.getElementById("hitokoto-from"),
+						document.getElementById("home-hero-quote"),
+						document.getElementById("home-hero-quote-from")
+					].filter(Boolean);
+
+					if (!els.length) return;
+					var textEls = [els[0], els[2]].filter(Boolean);
+					var fromEls = [els[1], els[3]].filter(Boolean);
+
+					// 清空之前的
+					textEls.forEach(function(el) { el.textContent = ""; });
+					fromEls.forEach(function(el) { el.textContent = ""; el.style.opacity = "0"; });
+
+					// 取数据 (直接从扩充的本地金句库中随机，零延迟)
+					var q = pickLocal();
+					var hitText = q.t;
+					var hitFrom = "— " + q.f;
+
+					// 1. 逐字打出
+					for (var i = 0; i <= hitText.length; i++) {
+						if (tokenObj.val !== currentToken) return;
+						var current = hitText.substring(0, i);
+						textEls.forEach(function(el) { el.textContent = current; });
+						var passed = await sleep(60 + Math.random() * 50, tokenObj, currentToken);
+						if (!passed) return;
+					}
+
+					// 2. 显示作者
+					if (tokenObj.val !== currentToken) return;
+					fromEls.forEach(function(el) { 
+						el.textContent = hitFrom; 
+						el.style.transition = "opacity 0.6s"; 
+						el.style.opacity = "1"; 
+					});
+
+					// 3. 停留展示 (5 秒)
+					var passedWait = await sleep(5000, tokenObj, currentToken);
+					if (!passedWait) return;
+
+					// 4. 作者淡出
+					fromEls.forEach(function(el) { el.style.opacity = "0"; });
+					await sleep(400, tokenObj, currentToken);
+
+					// 5. 逐字删除
+					for (var j = hitText.length; j >= 0; j--) {
+						if (tokenObj.val !== currentToken) return;
+						var currentDelete = hitText.substring(0, j);
+						textEls.forEach(function(el) { el.textContent = currentDelete; });
+						var passedDel = await sleep(30 + Math.random() * 30, tokenObj, currentToken);
+						if (!passedDel) return;
+					}
+
+					// 等待一小会儿，准备下一轮
+					var passedNext = await sleep(500, tokenObj, currentToken);
+					if (passedNext && tokenObj.val === currentToken) {
+						startTypeWriter();
+					}
+				}
+
+				startTypeWriter();
+
+				function bindBtn(id) {
+					var btn = document.getElementById(id);
+					if (btn) {
+						btn.addEventListener("click", function() {
+							startTypeWriter();
+						});
+					}
+				}
+
+				bindBtn("hitokoto-refresh");
+				bindBtn("home-hero-quote-refresh");
+
 				document.addEventListener("swup:page:view", function () {
-					loadHitokoto();
-					var b = document.getElementById("hitokoto-refresh");
-					if (b) b.addEventListener("click", loadHitokoto);
+					startTypeWriter();
+					bindBtn("hitokoto-refresh");
+					bindBtn("home-hero-quote-refresh");
 				});
 			})();
 		</script>
@@ -119,7 +183,7 @@ const enabled = funConfig.hitokoto;
 		/* 尽量单行/两行，短句更紧凑 */
 		display: -webkit-box;
 		-webkit-box-orient: vertical;
-		-webkit-line-clamp: 2;
+		-webkit-line-clamp: 3;
 		overflow: hidden;
 		font-size: 0.84rem;
 	}

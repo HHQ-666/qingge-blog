@@ -4,14 +4,69 @@ import { Icon } from "astro-icon/components";
 
 <!-- There can't be a filter on parent element, or it will break `fixed` -->
 <div class="back-to-top-wrapper hidden lg:block">
-    <div id="back-to-top-btn" class="back-to-top-btn hide flex items-center rounded-2xl overflow-hidden transition" onclick="backToTop()">
-        <button aria-label="Back to Top" class="btn-card h-[3.75rem] w-[3.75rem]">
-            <Icon name="material-symbols:keyboard-arrow-up-rounded" class="mx-auto"></Icon>
-        </button>
+    <div id="back-to-top-btn" class="back-to-top-btn hide flex items-center justify-center rounded-2xl transition" onclick="backToTop()">
+        <!-- 优美的背景面板：半透明玻璃态，带轻微阴影，并在起飞时收缩消失 -->
+        <div class="bg-panel absolute inset-0 z-0 h-[3.75rem] w-[3.75rem] rounded-2xl bg-white/80 dark:bg-[var(--card-bg)] backdrop-blur-md shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-black/5 dark:border-white/10 pointer-events-none transition-all duration-300"></div>
+        <button aria-label="Back to Top" class="absolute inset-0 z-10 h-[3.75rem] w-[3.75rem] border-none bg-transparent cursor-pointer"></button>
+        
+        <!-- 火箭和喷焰 -->
+        <div class="rocket-wrapper relative z-10 w-full h-full flex items-center justify-center">
+            <Icon name="fa6-solid:rocket" class="mx-auto -rotate-45" style="font-size: 1.5rem;"></Icon>
+            <div class="exhaust-flames">
+                <div class="flame flame-1"></div>
+                <div class="flame flame-2"></div>
+                <div class="flame flame-3"></div>
+            </div>
+        </div>
+
+        <!-- 爆炸烟花粒子 -->
+        <div class="explosion-wrapper">
+            <div class="explosion-particle p1"></div>
+            <div class="explosion-particle p2"></div>
+            <div class="explosion-particle p3"></div>
+            <div class="explosion-particle p4"></div>
+            <div class="explosion-particle p5"></div>
+            <div class="explosion-particle p6"></div>
+        </div>
     </div>
 </div>
 
 <style lang="stylus">
+@keyframes float
+    0%, 100%
+        transform: translateY(0)
+    50%
+        transform: translateY(-4px)
+
+@keyframes fly-away
+    0%
+        transform: translateY(0) scale(1)
+        opacity: 1
+    20%
+        transform: translateY(8px) scale(0.9)
+        opacity: 1
+    100%
+        transform: translateY(-200px) scale(1.2)
+        opacity: 0
+
+@keyframes flicker
+    0%
+        transform: scaleY(1)
+    100%
+        transform: scaleY(1.4)
+
+@keyframes explode-show
+    to
+        opacity: 1
+
+@keyframes explode-particle-var
+    0%
+        opacity: 1
+        transform: translate(-50%, -50%) scale(1)
+    100%
+        opacity: 0
+        transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0)
+
 .back-to-top-wrapper
     width: 3.75rem
     height: 3.75rem
@@ -31,19 +86,140 @@ import { Icon } from "astro-icon/components";
     cursor: pointer
     transform: translateX(5rem)
     pointer-events: auto
-    i
-        font-size: 1.75rem
+    width: 3.75rem
+    height: 3.75rem
+    
+    .bg-panel
+        transition: all 0.3s ease
+
     &.hide
         transform: translateX(5rem) scale(0.9)
         opacity: 0
         pointer-events: none
+        
     &:active
-      transform: translateX(5rem) scale(0.9)
+        transform: translateX(5rem) scale(0.9)
+    
+    /* 飞行状态 */
+    &.flying
+        pointer-events: none
+        
+        .bg-panel
+            opacity: 0
+            transform: scale(0.7)
+            
+        .rocket-wrapper
+            animation: fly-away 0.6s cubic-bezier(0.5, 0, 0.2, 1) forwards
+            
+        .exhaust-flames
+            opacity: 1
+            transform: translateX(-50%) scale(1.3)
+            bottom: -5px
+            
+        .explosion-wrapper
+            animation: explode-show 0s linear 0.5s forwards
+            
+        .explosion-particle
+            animation: explode-particle-var 0.4s ease-out 0.5s forwards
+
+    /* 悬停状态 */
+    &:hover:not(.flying)
+        .bg-panel
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1), 0 0 12px var(--primary)
+            opacity: 0.9
+        .rocket-wrapper
+            animation: float 1.2s ease-in-out infinite
+        .exhaust-flames
+            opacity: 1
+
+/* 火箭结构 */
+.rocket-wrapper
+    transition: color 0.3s
+    position: relative
+
+.exhaust-flames
+    position: absolute
+    bottom: 2px
+    left: 50%
+    transform: translateX(-50%)
+    display: flex
+    gap: 3px
+    opacity: 0
+    transition: all 0.3s
+    pointer-events: none
+
+.flame
+    width: 4px
+    height: 12px
+    background: #ff5722
+    border-radius: 4px
+    animation: flicker 0.1s infinite alternate
+    box-shadow: 0 0 6px #ff5722
+.flame-1
+    height: 8px
+    animation-delay: 0.05s
+    background: #ff9800
+.flame-2
+    height: 14px
+.flame-3
+    height: 8px
+    animation-delay: 0.1s
+    background: #ff9800
+
+/* 烟花结构 */
+.explosion-wrapper
+    position: absolute
+    top: -160px
+    left: 50%
+    transform: translateX(-50%)
+    width: 20px
+    height: 20px
+    opacity: 0
+    pointer-events: none
+
+.explosion-particle
+    position: absolute
+    top: 50%
+    left: 50%
+    width: 8px
+    height: 8px
+    background: var(--primary)
+    border-radius: 50%
+    opacity: 0
+    box-shadow: 0 0 10px var(--primary)
+
+.p1
+    --tx: -35px
+    --ty: -35px
+.p2
+    --tx: 0px
+    --ty: -50px
+.p3
+    --tx: 35px
+    --ty: -35px
+.p4
+    --tx: 50px
+    --ty: 0px
+.p5
+    --tx: 35px
+    --ty: 35px
+.p6
+    --tx: -50px
+    --ty: 0px
 
 </style>
 
 <script is:raw is:inline>
 function backToTop() {
+    const btn = document.getElementById('back-to-top-btn');
+    if (btn) {
+        btn.classList.add('flying');
+    }
     window.scroll({ top: 0, behavior: 'smooth' });
+    
+    // 等待滚动或动画结束后重置状态，1200ms
+    setTimeout(() => {
+        if (btn) btn.classList.remove('flying');
+    }, 1200);
 }
 </script>

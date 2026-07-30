@@ -76,7 +76,7 @@ const quoteEnabled = Boolean(funConfig.hitokoto);
 						</p>
 					) : (
 						<p class="mt-1 text-75 leading-relaxed text-[0.86rem] sm:hidden">
-							欢迎来到清哥的小屋 · 记录成长与思考
+							欢迎来到清哥的小屋 · 记录成长思考
 						</p>
 					)
 				}
@@ -98,20 +98,6 @@ const quoteEnabled = Boolean(funConfig.hitokoto);
 				<Icon name="material-symbols:person-rounded" class="text-[1.1rem] sm:text-[1.15rem]" />
 				关于我
 			</a>
-			{
-				profileConfig.links.slice(0, 3).map((item) => (
-					<a
-						rel="me"
-						aria-label={item.name}
-						href={item.url}
-						target="_blank"
-						class="btn-plain rounded-xl h-9 w-9 sm:h-10 sm:w-10 active:scale-90"
-						title={item.name}
-					>
-						<Icon name={item.icon} class="text-[1.2rem] sm:text-[1.25rem]" />
-					</a>
-				))
-			}
 		</div>
 	</div>
 </section>
