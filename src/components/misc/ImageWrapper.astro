@@ -36,12 +36,16 @@ if (isLocal) {
 		.normalize(path.join("../../", basePath, src))
 		.replace(/\\/g, "/");
 	const file = files[normalizedPath];
-	if (!file) {
+	if (typeof file === "function") {
+		img = await file();
+	} else if (file) {
+		// Keep compatibility with environments that expose glob entries eagerly.
+		img = file;
+	} else {
 		console.error(
 			`\n[ERROR] Image file not found: ${normalizedPath.replace("../../", "src/")}`,
 		);
 	}
-	img = await file();
 }
 
 const imageClass = "w-full h-full object-cover";
