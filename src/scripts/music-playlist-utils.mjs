@@ -25,7 +25,13 @@ export function getSongIdsFingerprint(songs) {
 }
 
 export function getApiFingerprint(api, fallbackApis) {
-	return [...new Set([api, ...(Array.isArray(fallbackApis) ? fallbackApis : [])].filter(Boolean))].join("|");
+	return [
+		...new Set(
+			[api, ...(Array.isArray(fallbackApis) ? fallbackApis : [])].filter(
+				Boolean,
+			),
+		),
+	].join("|");
 }
 
 export function normalizeApiSong(meta, payload) {
@@ -47,7 +53,12 @@ export function normalizeApiSong(meta, payload) {
 export function classifyDuration(duration, minDurationSec) {
 	const value = Number(duration);
 	const minimum = Number(minDurationSec);
-	if (!Number.isFinite(value) || value <= 0 || !Number.isFinite(minimum) || minimum <= 0) {
+	if (
+		!Number.isFinite(value) ||
+		value <= 0 ||
+		!Number.isFinite(minimum) ||
+		minimum <= 0
+	) {
 		return "unknown";
 	}
 	return value >= minimum ? "ready" : "short";

@@ -14,7 +14,9 @@ const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
 const api = conf?.api || "https://api.injahow.cn/meting/";
 const fallbackApis = Array.isArray(conf?.fallbackApis) ? conf.fallbackApis : [];
-const apisJson = JSON.stringify([...new Set([api, ...fallbackApis].filter(Boolean))]);
+const apisJson = JSON.stringify([
+	...new Set([api, ...fallbackApis].filter(Boolean)),
+]);
 const volume = String(conf?.volume ?? 0.55);
 const title = conf?.panelTitle || "华语金曲电台";
 const subtitle = conf?.panelSubtitle || "80 / 90 / 00 经典";

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
-	MAX_PLAYLIST_SIZE,
 	classifyDuration,
 	getApiFingerprint,
 	getSongIdsFingerprint,
+	MAX_PLAYLIST_SIZE,
 	normalizeApiSong,
 	normalizeSongConfig,
 } from "../../src/scripts/music-playlist-utils.mjs";
@@ -31,7 +31,10 @@ test("normalizes to at most 30 songs and keeps the first song per artist", () =>
 });
 
 test("cache fingerprints change when songs or APIs change", () => {
-	assert.notEqual(getSongIdsFingerprint([song(1)]), getSongIdsFingerprint([song(2)]));
+	assert.notEqual(
+		getSongIdsFingerprint([song(1)]),
+		getSongIdsFingerprint([song(2)]),
+	);
 	assert.notEqual(
 		getApiFingerprint("https://a.test", ["https://b.test"]),
 		getApiFingerprint("https://a.test", ["https://c.test"]),
@@ -69,19 +72,32 @@ test("classifies full-length, preview, and unknown durations", () => {
 });
 
 test("site configuration keeps 20 to 30 songs with unique artists", async () => {
-	const source = await readFile(new URL("../../src/config.ts", import.meta.url), "utf8");
-	const songsSection = source.match(/songs:\s*\[([\s\S]*?)\n\s*\],\n\s*\},\n\s*\};/);
+	const source = await readFile(
+		new URL("../../src/config.ts", import.meta.url),
+		"utf8",
+	);
+	const songsSection = source.match(
+		/songs:\s*\[([\s\S]*?)\n\s*\],\n\s*\},\n\s*\};/,
+	);
 	assert.ok(songsSection, "musicPlayer songs section should be present");
 
-	const entries = [...songsSection[1].matchAll(/\{\s*id:\s*"([^"]+)",\s*title:\s*"([^"]+)",\s*artist:\s*"([^"]+)"\s*\}/g)].map(
-		(match) => ({ id: match[1], title: match[2], artist: match[3] }),
-	);
+	const entries = [
+		...songsSection[1].matchAll(
+			/\{\s*id:\s*"([^"]+)",\s*title:\s*"([^"]+)",\s*artist:\s*"([^"]+)"\s*\}/g,
+		),
+	].map((match) => ({ id: match[1], title: match[2], artist: match[3] }));
 	assert.ok(entries.length >= 20 && entries.length <= MAX_PLAYLIST_SIZE);
-	assert.equal(new Set(entries.map((entry) => entry.artist)).size, entries.length);
+	assert.equal(
+		new Set(entries.map((entry) => entry.artist)).size,
+		entries.length,
+	);
 });
 
 test("player keeps unavailable rows visible and uses the versioned retry flow", async () => {
-	const source = await readFile(new URL("../../src/components/fun/MusicPlayer.astro", import.meta.url), "utf8");
+	const source = await readFile(
+		new URL("../../src/components/fun/MusicPlayer.astro", import.meta.url),
+		"utf8",
+	);
 	assert.match(source, /MUSIC_CACHE_VERSION/);
 	assert.match(source, /var songStates = songs\.map/);
 	assert.match(source, /function retrySong\(stateIndex\)/);
