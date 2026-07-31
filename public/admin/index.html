@@ -328,7 +328,7 @@
 			<p class="hint">
 				Token 在
 				<a href="https://github.com/settings/tokens" target="_blank" rel="noopener noreferrer">GitHub → Settings → Tokens</a>
-				创建，勾选 <code>repo</code> 权限即可。访客请返回 <a href="/">首页</a>。
+				创建。细粒度 Token 请给本仓库开启 <code>Metadata: Read</code> 和 <code>Contents: Read and write</code>；经典 Token 请勾选 <code>repo</code>（组织仓库还需 <code>read:org</code>）。访客请返回 <a href="/">首页</a>。
 			</p>
 		</div>
 
@@ -694,6 +694,22 @@
 						throw new Error("当前 Token 对仓库没有写权限，请使用具备 repo 权限的 Token。");
 					}
 
+					var collaboratorsRes = await fetch(
+						"https://api.github.com/repos/" + githubRepo + "/collaborators?per_page=1",
+						{
+							headers: ghHeaders(token),
+							credentials: "omit",
+						},
+					);
+					if (collaboratorsRes.status === 403) {
+						throw new Error(
+							"Token 可以访问仓库，但没有读取 collaborators 的权限。细粒度 Token 请开启 Metadata: Read；经典 Token 请勾选 repo（组织仓库还需 read:org）。",
+						);
+					}
+					if (!collaboratorsRes.ok) {
+						throw new Error("无法校验仓库协作者权限（HTTP " + collaboratorsRes.status + "）。");
+					}
+
 					return {
 						backendName: "github",
 						id: profile.id,
@@ -819,7 +835,7 @@
 				if (hasToken && tokenInput) tokenInput.required = false;
 
 				tryAutoEnter().then(function (ok) {
-					if (!ok) showGate(!hasToken);
+					if (!ok) showGate(sessionUnlocked());
 				});
 			})();
 		</script>
