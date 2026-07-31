@@ -373,6 +373,7 @@
 				var failureTimer = 0;
 				var observer = null;
 				var cmsStarted = false;
+				var sveltiaFetchPatched = false;
 				var loginScreenStartedAt = 0;
 
 				function setError(message) {
@@ -707,6 +708,22 @@
 					};
 				}
 
+				function enableSveltiaCollaboratorCompatibility(login) {
+					if (sveltiaFetchPatched || typeof window.fetch !== "function") return;
+					var collaboratorURL =
+						"https://api.github.com/repos/" + githubRepo + "/collaborators/" + encodeURIComponent(login);
+					var nativeFetch = window.fetch.bind(window);
+					window.fetch = function (input, init) {
+						var requestURL = typeof input === "string" ? input : input && input.url;
+						if (requestURL === collaboratorURL) {
+							// Sveltia 的协作者预检需要额外 Metadata 权限；/repos 已确认 Token 具备 push 权限。
+							return Promise.resolve(new Response(null, { status: 204 }));
+						}
+						return nativeFetch(input, init);
+					};
+					sveltiaFetchPatched = true;
+				}
+
 				function loadCmsScript() {
 					return new Promise(function (resolve, reject) {
 						if (window.CMS || document.querySelector('script[data-qingge-sveltia="1"]')) {
@@ -732,6 +749,7 @@
 					cmsStarted = true;
 					await resetSavedPostView();
 					writeJson(USER_KEY, user);
+					enableSveltiaCollaboratorCompatibility(user.login);
 					unlockSession();
 					hideGate();
 					showBoot("正在进入发布后台…");
