@@ -229,7 +229,7 @@ PC 后台：[`/admin/`](https://blog.hhq688.com/admin/)
 2. 输入**写作口令**（与 `src/config.ts` 里 `authorGate.secret` 一致，当前为 `qingge666`）
 3. **首次**再填一个 GitHub Token：
    - 打开 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
-   - 生成 token：细粒度 Token 选择 `HHQ-666/qingge-blog`，开启 **Metadata: Read**、**Contents: Read and write**；经典 Token 勾选 **`repo`**（组织仓库还需 `read:org`）
+   - 生成 token：细粒度 Token 只选择 `HHQ-666/qingge-blog`，开启 **Contents: Read and write**；经典 Token 勾选 **`repo`**（组织仓库还需 `read:org`）
    - 粘贴到写作台（可勾选「在本机记住 Token」）
 4. 点「进入写作台」→ 验证通过后直接进后台
 
