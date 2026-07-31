@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
 	MAX_PLAYLIST_SIZE,
@@ -65,4 +66,16 @@ test("classifies full-length, preview, and unknown durations", () => {
 	assert.equal(classifyDuration(45, 90), "short");
 	assert.equal(classifyDuration(0, 90), "unknown");
 	assert.equal(classifyDuration(Number.NaN, 90), "unknown");
+});
+
+test("site configuration keeps 20 to 30 songs with unique artists", async () => {
+	const source = await readFile(new URL("../../src/config.ts", import.meta.url), "utf8");
+	const songsSection = source.match(/songs:\s*\[([\s\S]*?)\n\s*\],\n\s*\},\n\s*\};/);
+	assert.ok(songsSection, "musicPlayer songs section should be present");
+
+	const entries = [...songsSection[1].matchAll(/\{\s*id:\s*"([^"]+)",\s*title:\s*"([^"]+)",\s*artist:\s*"([^"]+)"\s*\}/g)].map(
+		(match) => ({ id: match[1], title: match[2], artist: match[3] }),
+	);
+	assert.ok(entries.length >= 20 && entries.length <= MAX_PLAYLIST_SIZE);
+	assert.equal(new Set(entries.map((entry) => entry.artist)).size, entries.length);
 });
