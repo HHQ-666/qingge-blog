@@ -79,3 +79,14 @@ test("site configuration keeps 20 to 30 songs with unique artists", async () => 
 	assert.ok(entries.length >= 20 && entries.length <= MAX_PLAYLIST_SIZE);
 	assert.equal(new Set(entries.map((entry) => entry.artist)).size, entries.length);
 });
+
+test("player keeps unavailable rows visible and uses the versioned retry flow", async () => {
+	const source = await readFile(new URL("../../src/components/fun/MusicPlayer.astro", import.meta.url), "utf8");
+	assert.match(source, /MUSIC_CACHE_VERSION/);
+	assert.match(source, /var songStates = songs\.map/);
+	assert.match(source, /function retrySong\(stateIndex\)/);
+	assert.match(source, /非完整音源 · 重试/);
+	assert.match(source, /音源暂不可用 · 重试/);
+	assert.match(source, /li\.querySelector\("\.qm__item-status"\)/);
+	assert.match(source, /function probeAudio\(item\)/);
+});

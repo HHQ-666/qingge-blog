@@ -6,9 +6,10 @@
  * - localStorage 缓存歌单，刷新页面不重复探测
  */
 import { funConfig } from "../../config";
+import { normalizeSongConfig } from "../../scripts/music-playlist-utils.mjs";
 
 const conf = funConfig.musicPlayer;
-const songs = conf?.songs?.length ? conf.songs : [];
+const songs = normalizeSongConfig(conf?.songs);
 const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
 const api = conf?.api || "https://api.injahow.cn/meting/";
@@ -17,6 +18,7 @@ const apisJson = JSON.stringify([...new Set([api, ...fallbackApis].filter(Boolea
 const volume = String(conf?.volume ?? 0.55);
 const title = conf?.panelTitle || "华语金曲电台";
 const subtitle = conf?.panelSubtitle || "80 / 90 / 00 经典";
+const minDurationSec = String(conf?.minDurationSec ?? 90);
 /** 缓存有效期（小时），代理 URL 会过期，不宜过长 */
 const cacheHours = String(conf?.cacheHours ?? 6);
 ---
@@ -30,6 +32,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			data-songs={songsJson}
 			data-apis={apisJson}
 			data-volume={volume}
+			data-min-duration={minDurationSec}
 			data-cache-hours={cacheHours}
 		>
 			{/* 默认：圆盘 FAB */}
@@ -141,9 +144,16 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 
 {
 	enabled && (
-        <script>
+		<script>
           // @ts-nocheck
           import {
+				MUSIC_CACHE_VERSION,
+				classifyDuration,
+				getApiFingerprint,
+				getSongIdsFingerprint,
+				normalizeApiSong,
+			} from "../../scripts/music-playlist-utils.mjs";
+			import {
 				getNextIndex,
 				nextPlaybackMode,
 				PLAYBACK_MODE_LABELS,
@@ -163,14 +173,16 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				try { apiBases = JSON.parse(root.getAttribute("data-apis") || "[]"); } catch (e) { apiBases = []; }
 				apiBases = apiBases.filter(function (item) { return typeof item === "string" && item; });
 				if (!apiBases.length) apiBases = ["https://api.injahow.cn/meting/"];
-				var apiFingerprint = apiBases.join("|");
+				var apiFingerprint = getApiFingerprint(apiBases[0], apiBases.slice(1));
 				var apiCooldowns = {};
 				var volume = parseFloat(root.getAttribute("data-volume") || "0.55");
 				if (isNaN(volume)) volume = 0.55;
+				var minDurationSec = parseFloat(root.getAttribute("data-min-duration") || "90");
+				if (!isFinite(minDurationSec) || minDurationSec <= 0) minDurationSec = 90;
 				var cacheHours = parseFloat(root.getAttribute("data-cache-hours") || "6");
 				if (isNaN(cacheHours) || cacheHours < 0.5) cacheHours = 6;
 
-				var CACHE_KEY = "qingge-music-playlist-v2";
+				var CACHE_KEY = "qingge-music-playlist-" + MUSIC_CACHE_VERSION;
 
 				var toggle = document.getElementById("qm-toggle");
 				var miniExpandMeta = document.getElementById("qm-mini-expand-meta");
@@ -206,6 +218,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var nextBtn = document.getElementById("qm-next");
 				var audio = document.getElementById("qm-audio");
 
+				var songStates = songs.map(function (meta) {
+					return { meta: meta, status: "loading", item: null, reason: "" };
+				});
 				var loaded = [];
 				var index = 0;
 				var seeking = false;
@@ -214,8 +229,29 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var resumeTimer = 0;
 				var recovering = false;
 
-				function songIdsFingerprint() {
-					return songs.map(function (s) { return s.id; }).join(",");
+				function songIdsFingerprint() { return getSongIdsFingerprint(songs); }
+
+				function syncLoaded() {
+					loaded = songStates
+						.filter(function (state) { return state.status === "ready" && state.item; })
+						.map(function (state) { return state.item; });
+					if (loaded.length && index >= loaded.length) index = 0;
+				}
+
+				function readyIndexForState(state) {
+					var readyIndex = 0;
+					for (var i = 0; i < songStates.length; i++) {
+						if (songStates[i] === state) return state.status === "ready" ? readyIndex : -1;
+						if (songStates[i].status === "ready") readyIndex++;
+					}
+					return -1;
+				}
+
+				function stateLabel(state) {
+					if (state.status === "ready") return "可播放";
+					if (state.status === "short") return "非完整音源 · 重试";
+					if (state.status === "failed") return "音源暂不可用 · 重试";
+					return "正在获取音源";
 				}
 
 				function readCache() {
@@ -223,7 +259,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						var raw = localStorage.getItem(CACHE_KEY);
 						if (!raw) return null;
 						var data = JSON.parse(raw);
-						if (!data || !data.items || !data.items.length) return null;
+						if (!data || data.version !== MUSIC_CACHE_VERSION || !data.items || !data.items.length) return null;
 						if (data.api !== apiFingerprint) return null;
 						if (data.ids !== songIdsFingerprint()) return null;
 						var age = Date.now() - (data.ts || 0);
@@ -239,6 +275,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						localStorage.setItem(
 							CACHE_KEY,
 							JSON.stringify({
+								version: MUSIC_CACHE_VERSION,
 								ts: Date.now(),
 								api: apiFingerprint,
 								ids: songIdsFingerprint(),
@@ -408,23 +445,37 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				function highlight(i) {
 					if (!listEl) return;
 					var items = listEl.querySelectorAll(".qm__item");
-					for (var k = 0; k < items.length; k++) items[k].classList.toggle("is-active", k === i);
-					if (items[i]) items[i].scrollIntoView({ block: "nearest" });
+					var activeItem = null;
+					for (var k = 0; k < items.length; k++) {
+						var isActive = Number(items[k].getAttribute("data-playable-index")) === i;
+						items[k].classList.toggle("is-active", isActive);
+						if (isActive) activeItem = items[k];
+					}
+					if (activeItem) activeItem.scrollIntoView({ block: "nearest" });
 				}
 
 				function buildList() {
 					if (!listEl) return;
 					listEl.innerHTML = "";
-					for (var i = 0; i < loaded.length; i++) {
-						(function (i) {
-							var s = loaded[i];
+					for (var i = 0; i < songStates.length; i++) {
+						(function (stateIndex) {
+							var state = songStates[stateIndex];
+							var s = state.item || state.meta;
+							var playableIndex = readyIndexForState(state);
 							var li = document.createElement("li");
-							li.className = "qm__item";
-							li.innerHTML = '<span class="qm__idx"></span><span class="qm__item-body"><span class="qm__item-title"></span><span class="qm__item-artist"></span></span>';
-							li.querySelector(".qm__idx").textContent = String(i + 1);
-							li.querySelector(".qm__item-title").textContent = s.name;
+							li.className = "qm__item" + (state.status === "ready" ? "" : " is-unavailable");
+							li.setAttribute("data-playable-index", playableIndex >= 0 ? String(playableIndex) : "-1");
+							li.innerHTML = '<span class="qm__idx"></span><span class="qm__item-body"><span class="qm__item-title"></span><span class="qm__item-artist"></span></span><span class="qm__item-status"></span>';
+							li.querySelector(".qm__idx").textContent = String(stateIndex + 1);
+							li.querySelector(".qm__item-title").textContent = s.name || s.title || "未知歌曲";
 							li.querySelector(".qm__item-artist").textContent = s.artist || "";
-							li.addEventListener("click", function () { playIndex(i, true); });
+							li.querySelector(".qm__item-status").textContent = stateLabel(state);
+							if (state.reason) li.title = state.reason;
+							if (playableIndex >= 0) {
+								li.addEventListener("click", function () { playIndex(playableIndex, true); });
+							} else if (state.status !== "loading") {
+								li.addEventListener("click", function () { retrySong(stateIndex); });
+							}
 							listEl.appendChild(li);
 						})(i);
 					}
@@ -439,8 +490,40 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					return Number(apiCooldowns[base] || 0) > Date.now();
 				}
 
+				function probeAudio(item) {
+					return new Promise(function (resolve) {
+						var probe = new Audio();
+						var settled = false;
+						var timer = window.setTimeout(function () {
+							finish({ status: "failed", reason: "metadata-timeout" });
+						}, 12000);
+						function finish(result) {
+							if (settled) return;
+							settled = true;
+							window.clearTimeout(timer);
+							probe.onloadedmetadata = null;
+							probe.onerror = null;
+							probe.src = "";
+							resolve(result);
+						}
+						probe.preload = "metadata";
+						probe.onloadedmetadata = function () {
+							var duration = Number(probe.duration);
+							var state = classifyDuration(duration, minDurationSec);
+							if (state === "short") finish({ status: "short", reason: "duration-too-short", duration: duration });
+							else if (state === "ready") finish({ status: "ready", duration: duration });
+							else finish({ status: "failed", reason: "invalid-duration" });
+						};
+						probe.onerror = function () { finish({ status: "failed", reason: "audio-error" }); };
+						probe.src = item.url;
+						probe.load();
+					});
+				}
+
 				function fetchSongFromApi(meta, base) {
-					return fetch(apiUrl(base, "song", meta.id), { credentials: "omit" })
+					var controller = new AbortController();
+					var timer = window.setTimeout(function () { controller.abort(); }, 12000);
+					return fetch(apiUrl(base, "song", meta.id), { credentials: "omit", signal: controller.signal })
 						.then(function (r) {
 							if (r.status === 429) {
 								var retryAfter = Number(r.headers.get("retry-after")) || 1;
@@ -451,49 +534,37 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 							return r.json();
 						})
 						.then(function (data) {
-							var s = Array.isArray(data) ? data[0] : data;
-							if (!s || !s.url) return null;
-							var url = s.url;
-							return fetch(url, { method: "GET", headers: { Range: "bytes=0-1" }, credentials: "omit" })
-								.then(function (r) {
-									var ct = (r.headers.get("content-type") || "").toLowerCase();
-									if (ct.indexOf("html") >= 0) return null;
-									var cr = r.headers.get("content-range") || "";
-									var cl = r.headers.get("content-length") || "";
-									var total = 0;
-									if (cr.indexOf("/") >= 0) total = Number(cr.split("/").pop()) || 0;
-									if (!total && cl) total = Number(cl) || 0;
-									// 网易云试听片段约为 720KB (45秒)；为保证能播放出声，将过滤线降低到 100KB
-									if (total > 0 && total < 100000) return null;
-									return {
-										id: meta.id,
-										name: meta.title || s.name || s.title || meta.id,
-										artist: meta.artist || s.artist || s.author || "",
-										url: url,
-										cover: s.pic || s.cover || "",
-									};
-								})
-								.catch(function () {
-									return {
-										id: meta.id,
-										name: meta.title || s.name || s.title || meta.id,
-										artist: meta.artist || s.artist || s.author || "",
-										url: url,
-										cover: s.pic || s.cover || "",
-									};
-								});
+							var item = normalizeApiSong(meta, data);
+							if (!item) return { status: "failed", reason: "no-url" };
+							return probeAudio(item).then(function (result) {
+								if (result.status === "ready") {
+									item.duration = result.duration;
+									return { status: "ready", item: item };
+								}
+								return result;
+							});
 						})
+						.finally(function () { window.clearTimeout(timer); });
 				}
 
 				function fetchSong(meta) {
-					var index = 0;
+					var apiIndex = 0;
+					var failures = [];
 					function tryNextApi() {
-						while (index < apiBases.length && apiOnCooldown(apiBases[index])) index++;
-						if (index >= apiBases.length) return Promise.resolve(null);
-						var base = apiBases[index++];
-						return fetchSongFromApi(meta, base).then(function (item) {
-							return item || tryNextApi();
-						}).catch(tryNextApi);
+						while (apiIndex < apiBases.length && apiOnCooldown(apiBases[apiIndex])) apiIndex++;
+						if (apiIndex >= apiBases.length) {
+							var shortFailure = failures.find(function (failure) { return failure.status === "short"; });
+							return Promise.resolve(shortFailure || { status: "failed", reason: "all-apis-failed" });
+						}
+						var base = apiBases[apiIndex++];
+						return fetchSongFromApi(meta, base).then(function (result) {
+							if (result && result.status === "ready") return result;
+							if (result) failures.push(result);
+							return tryNextApi();
+						}).catch(function (error) {
+							failures.push({ status: "failed", reason: error?.message || "request-failed" });
+							return tryNextApi();
+						});
 					}
 					return tryNextApi();
 				}
@@ -506,9 +577,11 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						if (String(songs[i].id) === String(item.id)) { meta = songs[i]; break; }
 					}
 					if (!meta) meta = { id: item.id, title: item.name, artist: item.artist };
-					return fetchSong(meta).then(function (fresh) {
-						if (!fresh) return null;
+					return fetchSong(meta).then(function (result) {
+						if (!result || result.status !== "ready" || !result.item) return null;
+						var fresh = result.item;
 						item.url = fresh.url;
+						item.duration = fresh.duration;
 						if (fresh.cover) item.cover = fresh.cover;
 						writeCache(loaded);
 						return item;
@@ -641,83 +714,141 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					});
 				}
 
-				function applyLoaded(items, fromCache) {
-					loaded = items;
-					buildList();
-					playIndex(0, false);
-					showReady();
+				function updateSummary(done, total) {
+					var readyCount = songStates.filter(function (state) { return state.status === "ready"; }).length;
+					var pendingCount = songStates.filter(function (state) { return state.status === "loading"; }).length;
+					setLoadProgress(done, total, readyCount);
 					if (tipEl) {
-						tipEl.textContent = fromCache
-							? "已从缓存恢复 " + loaded.length + " 首 · 点封面播放"
-							: "可播放 " + loaded.length + " 首 · 点封面播放";
+						if (!readyCount && !pendingCount) {
+							tipEl.textContent = "暂无可用音源，但歌单仍保留";
+						} else {
+							tipEl.textContent = "共 " + songs.length + " 首 · 当前可播放 " + readyCount + " 首";
+							if (pendingCount) tipEl.textContent += " · 正在获取 " + pendingCount + " 首";
+						}
 					}
+					if (loadingTitle && !readyCount && !pendingCount) loadingTitle.textContent = "暂无可用音源";
+					if (loadingSub && !readyCount && !pendingCount) loadingSub.textContent = "可稍后重试或更换 musicPlayer.api";
+				}
+
+				function applyCachedItems(items) {
+					for (var i = 0; i < songStates.length; i++) {
+						var state = songStates[i];
+						var cached = items.find(function (item) { return String(item.id) === String(state.meta.id); });
+						if (!cached || classifyDuration(cached.duration, minDurationSec) !== "ready") continue;
+						state.status = "ready";
+						state.item = cached;
+						state.reason = "cache";
+					}
+					syncLoaded();
+					buildList();
+					if (loaded.length) playIndex(index || 0, false);
+					showReady();
+				}
+
+				function applyFetchResult(stateIndex, result) {
+					var state = songStates[stateIndex];
+					if (!state) return;
+					if (result && result.status === "ready" && result.item) {
+						state.status = "ready";
+						state.item = result.item;
+						state.reason = "";
+					} else {
+						state.status = result?.status === "short" ? "short" : "failed";
+						state.item = null;
+						state.reason = result?.reason || "source-failed";
+					}
+					syncLoaded();
+					buildList();
+				}
+
+				function retrySong(stateIndex) {
+					var state = songStates[stateIndex];
+					if (!state || state.status === "loading") return Promise.resolve(null);
+					var currentId = loaded[index] && loaded[index].id;
+					var hadReadySong = loaded.length > 0;
+					state.status = "loading";
+					state.reason = "";
+					buildList();
+					updateSummary(songs.length - songStates.filter(function (item) { return item.status === "loading"; }).length, songs.length);
+					return fetchSong(state.meta).then(function (result) {
+						applyFetchResult(stateIndex, result);
+						if (currentId) {
+							var nextIndex = loaded.findIndex(function (item) { return String(item.id) === String(currentId); });
+							if (nextIndex >= 0) index = nextIndex;
+						}
+						if (!hadReadySong && loaded.length) playIndex(0, false);
+						writeCache(loaded);
+						updateSummary(songs.length - songStates.filter(function (item) { return item.status === "loading"; }).length, songs.length);
+						return result;
+					});
 				}
 
 				function fetchAll() {
-					showLoading();
-					setLoadProgress(0, songs.length, 0);
-					var i = 0;
+					var targetIndexes = [];
+					for (var i = 0; i < songStates.length; i++) {
+						if (songStates[i].status === "loading") targetIndexes.push(i);
+					}
+						if (!targetIndexes.length) {
+						updateSummary(songs.length, songs.length);
+						showReady();
+						return Promise.resolve();
+					}
+					buildList();
+					showReady();
+					setLoadProgress(songs.length - targetIndexes.length, songs.length, loaded.length);
+					var cursor = 0;
+					var completed = songs.length - targetIndexes.length;
 					var concurrency = 2;
-					var skipped = 0;
-					var items = [];
 					function next() {
-						if (i >= songs.length) return Promise.resolve();
-						var cur = songs[i++];
-						var n = i;
-						return fetchSong(cur).then(function (item) {
-							if (item) items.push(item); else skipped++;
-							setLoadProgress(n, songs.length, items.length);
-							return next();
-						});
+						if (cursor >= targetIndexes.length) return Promise.resolve();
+						var stateIndex = targetIndexes[cursor++];
+						return fetchSong(songStates[stateIndex].meta)
+							.then(function (result) {
+								applyFetchResult(stateIndex, result);
+								completed++;
+								updateSummary(completed, songs.length);
+								return next();
+							})
+							.catch(function (error) {
+								applyFetchResult(stateIndex, { status: "failed", reason: error?.message || "request-failed" });
+								completed++;
+								updateSummary(completed, songs.length);
+								return next();
+							});
 					}
 					var starters = [];
-					for (var c = 0; c < concurrency; c++) starters.push(next());
+					for (var c = 0; c < Math.min(concurrency, targetIndexes.length); c++) starters.push(next());
 					return Promise.all(starters).then(function () {
-						if (!items.length) {
-							if (loadingTitle) loadingTitle.textContent = "暂无可用音源";
-							if (loadingSub) loadingSub.textContent = "可稍后重试或更换 musicPlayer.api";
-							return;
-						}
-						writeCache(items);
-						applyLoaded(items, false);
-						if (tipEl && skipped) {
-							tipEl.textContent = "可播放 " + items.length + " 首 · 已跳过 " + skipped + " 首 · 点封面播放";
-						}
+						syncLoaded();
+						buildList();
+						writeCache(loaded);
+						updateSummary(songs.length, songs.length);
+						if (loaded.length && (!songEl || songEl.textContent === "—" || !songEl.textContent)) playIndex(index || 0, false);
+						showReady();
 					});
 				}
 
 				function ensureLoaded() {
-					// 已有数据：直接展示（修复缓存预热后打开面板空白）
-					if (loaded.length) {
-						if (listEl && !listEl.children.length) buildList();
-						if (songEl && (songEl.textContent === "—" || !songEl.textContent)) {
-							playIndex(index || 0, false);
-						}
-						showReady();
-						return Promise.resolve();
-					}
 					if (loadPromise) return loadPromise;
-
-					var cached = readCache();
-					if (cached && cached.length) {
-						applyLoaded(cached, true);
-						loadPromise = Promise.resolve();
-						return loadPromise;
+					if (!songStates.some(function (state) { return state.status === "ready"; })) {
+						var cached = readCache();
+						if (cached && cached.length) applyCachedItems(cached);
 					}
-
 					loadPromise = fetchAll().catch(function (err) {
 						console.error("[qingge-music] load failed", err);
 						if (loadingTitle) loadingTitle.textContent = "加载失败";
 						if (loadingSub) loadingSub.textContent = "请关闭后重试，或检查网络";
-						loadPromise = null; // 允许重试
+						loadPromise = null;
 					});
 					return loadPromise;
 				}
 
-				// 预读缓存到内存，打开面板时 ensureLoaded 会立刻 showReady
 				var cachedBoot = readCache();
 				if (cachedBoot && cachedBoot.length) {
-					loaded = cachedBoot;
+					applyCachedItems(cachedBoot);
+					if (songStates.some(function (state) { return state.status === "loading"; })) {
+						setTimeout(function () { ensureLoaded(); }, 1200);
+					}
 				} else if ("requestIdleCallback" in window) {
 					requestIdleCallback(function () { ensureLoaded(); }, { timeout: 4000 });
 				} else {
@@ -1289,12 +1420,14 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				transition: background 140ms ease;
 			}
 			.qm__item:hover { background: rgba(255,255,255,0.07); }
+			.qm__item.is-unavailable { opacity: 0.62; }
+			.qm__item.is-unavailable:hover { background: rgba(255,255,255,0.06); }
 			.qm__item.is-active { background: oklch(0.55 0.12 var(--hue) / 0.32); }
 			.qm__idx {
 				width: 1.2rem; text-align: center; font-size: 0.72rem; opacity: 0.45;
 				font-variant-numeric: tabular-nums;
 			}
-			.qm__item-body { min-width: 0; display: flex; flex-direction: column; }
+			.qm__item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 			.qm__item-title {
 				font-size: 0.86rem; font-weight: 600;
 				white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1302,6 +1435,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			.qm__item-artist {
 				font-size: 0.72rem; opacity: 0.55;
 				white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+			}
+			.qm__item-status {
+				margin-left: auto; flex: 0 0 auto; font-size: 0.62rem; opacity: 0.58;
+				white-space: nowrap;
 			}
 			.qm__tip {
 				margin: 0.55rem 0 0; font-size: 0.65rem; opacity: 0.5;
@@ -1353,6 +1490,12 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				}
 				.qm__panel {
 					width: min(22.5rem, calc(100vw - 1.1rem));
+				}
+				.qm__item-status {
+					max-width: 5.8rem;
+					font-size: 0.56rem;
+					white-space: normal;
+					text-align: right;
 				}
 			}
 			@media (prefers-reduced-motion: reduce) {
