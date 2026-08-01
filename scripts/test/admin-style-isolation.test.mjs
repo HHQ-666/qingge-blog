@@ -2,10 +2,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const source = await readFile(
-	new URL("../../src/pages/admin/index.astro", import.meta.url),
-	"utf8",
-);
+const [source, staticSource] = await Promise.all([
+	readFile(
+		new URL("../../src/pages/admin/index.astro", import.meta.url),
+		"utf8",
+	),
+	readFile(new URL("../../public/admin/index.html", import.meta.url), "utf8"),
+]);
+const adminSources = [source, staticSource];
 
 test("admin viewport rules are constrained to the admin page", () => {
 	assert.match(source, /<body class="admin-page">/);
@@ -18,6 +22,35 @@ test("admin viewport rules are constrained to the admin page", () => {
 		source,
 		/\n\s*body > div:not\(#admin-gate\):not\(#admin-boot\),/,
 	);
+});
+
+test("both admin entries keep a fixed CMS shell and isolate loader fullscreen styles", () => {
+	for (const adminSource of adminSources) {
+		assert.match(adminSource, /--admin-shell-width:\s*1000px/);
+		assert.match(
+			adminSource,
+			/width:\s*min\(100%,\s*var\(--admin-shell-width\)\)\s*!important/,
+		);
+		assert.match(
+			adminSource,
+			/max-width:\s*var\(--admin-shell-width\)\s*!important/,
+		);
+		assert.match(adminSource, /\.qingge-center-target\s*\{/);
+		assert.doesNotMatch(adminSource, /\.sui\.app-shell\s*>\s*\.container\s*,/);
+		assert.doesNotMatch(adminSource, /div\.container\[role="none"\]\s*,/);
+		assert.doesNotMatch(
+			adminSource,
+			/\.sui\.app-shell \.container:has\(button\)\s*,/,
+		);
+		assert.doesNotMatch(
+			adminSource,
+			/\.sui\.app-shell\s*>\s*\.container\s*>\s*\.inner\s*,/,
+		);
+		assert.doesNotMatch(
+			adminSource,
+			/div\.container\[role="none"\]\s*>\s*\.inner\s*\{/,
+		);
+	}
 });
 
 test("admin waits for Sveltia to restore a saved token before treating its login screen as a failure", () => {

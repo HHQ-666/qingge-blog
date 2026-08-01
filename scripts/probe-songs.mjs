@@ -6,12 +6,13 @@
  * 对每个「歌名 + 歌手」候选：
  *   1. 走 Meting search 拿真实 ID（不靠人工记忆的 ID）
  *   2. 校验返回的歌手名包含期望歌手，避免同名歌串台
- *   3. 用播放器同样的规则验证音源（非 HTML、体积 >= 800KB）
+ *   3. 用完整音源接口验证播放地址、体积和歌词时长
  *
  * 输出可直接誊抄进 src/config.ts 的 songs 数组。
  */
 
-const API = "https://api.injahow.cn/meting/";
+const SEARCH_API = "https://api.i-meto.com/meting/api";
+const SONG_API = "https://music.rrvenn.cn/song";
 
 /** 候选：[歌名, 歌手]。歌手用于校验搜索结果，每位歌手只保留一首 */
 const CANDIDATES = [
@@ -101,11 +102,14 @@ const CANDIDATES = [
 	["驿动的心", "姜育恒"],
 ];
 
-const MIN_BYTES = 100000;
+const MIN_BYTES = 1000000;
+const MIN_DURATION_SEC = 90;
 
 function apiUrl(type, id) {
-	const join = API.includes("?") ? "&" : "?";
-	return `${API}${join}server=netease&type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+	if (type === "song") {
+		return `${SONG_API}?id=${encodeURIComponent(id)}&type=json&level=exhigh`;
+	}
+	return `${SEARCH_API}?server=netease&type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
 }
 
 async function getJson(url, timeoutMs = 15000) {
@@ -154,35 +158,49 @@ async function resolveId(title, artist) {
 	return null;
 }
 
-/** 按播放器同样的规则验证音源真的能放 */
+function lyricDurationSeconds(lyric) {
+	let max = 0;
+	for (const match of String(lyric || "").matchAll(
+		/\[(\d+):(\d+(?:\.\d+)?)\]/g,
+	)) {
+		max = Math.max(max, Number(match[1]) * 60 + Number(match[2]));
+	}
+	return max;
+}
+
+function sizeInBytes(value) {
+	const match = String(value || "").match(/([\d.]+)\s*(KB|MB|GB)?/i);
+	if (!match) return 0;
+	const multiplier =
+		{ KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 }[
+			String(match[2] || "").toUpperCase()
+		] || 1;
+	return Math.round(Number(match[1]) * multiplier) || 0;
+}
+
+/** 按播放器同样的规则验证音源是完整歌曲，而不是 30 秒试听 */
 async function verifyPlayable(id) {
 	const data = await getJson(apiUrl("song", id));
-	const s = Array.isArray(data) ? data[0] : data;
+	const s = data?.data || (Array.isArray(data) ? data[0] : data);
 	if (!s?.url) return { ok: false, reason: "no-url" };
 
-	const ac = new AbortController();
-	const timer = setTimeout(() => ac.abort(), 15000);
-	try {
-		const res = await fetch(s.url, {
-			headers: { Range: "bytes=0-1" },
-			signal: ac.signal,
-		});
-		const ct = (res.headers.get("content-type") || "").toLowerCase();
-		if (ct.includes("html")) return { ok: false, reason: "html-redirect" };
+	const size = sizeInBytes(s.size);
+	const duration = lyricDurationSeconds(s.lyric);
+	if (size > 0 && size < MIN_BYTES) {
+		return { ok: false, reason: `too-small(${size})` };
+	}
+	if (duration > 0 && duration < MIN_DURATION_SEC) {
+		return { ok: false, reason: `too-short(${duration}s)` };
+	}
 
-		const cr = res.headers.get("content-range") || "";
-		const cl = res.headers.get("content-length") || "";
-		let total = 0;
-		if (cr.includes("/")) total = Number(cr.split("/").pop()) || 0;
-		if (!total && cl) total = Number(cl) || 0;
-		if (total > 0 && total < MIN_BYTES) {
-			return { ok: false, reason: `too-small(${total})` };
+	try {
+		const parsed = new URL(s.url);
+		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+			return { ok: false, reason: "invalid-protocol" };
 		}
-		return { ok: true, bytes: total };
+		return { ok: true, bytes: size, duration };
 	} catch {
-		return { ok: false, reason: "fetch-failed" };
-	} finally {
-		clearTimeout(timer);
+		return { ok: false, reason: "invalid-url" };
 	}
 }
 

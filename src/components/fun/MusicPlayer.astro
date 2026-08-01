@@ -152,6 +152,8 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				MUSIC_CACHE_VERSION,
 				classifyDuration,
 				getApiFingerprint,
+				getPlayableSongStates,
+				getSongApiUrl,
 				getSongIdsFingerprint,
 				normalizeApiSong,
 			} from "../../scripts/music-playlist-utils.mjs";
@@ -228,32 +230,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var seeking = false;
 				var loadPromise = null;
 				var shouldBePlaying = false;
-				var resumeTimer = 0;
 				var recovering = false;
+				var recoveryPromise = null;
 
 				function songIdsFingerprint() { return getSongIdsFingerprint(songs); }
 
 				function syncLoaded() {
-					loaded = songStates
-						.filter(function (state) { return state.status === "ready" && state.item; })
+					loaded = getPlayableSongStates(songStates)
 						.map(function (state) { return state.item; });
 					if (loaded.length && index >= loaded.length) index = 0;
-				}
-
-				function readyIndexForState(state) {
-					var readyIndex = 0;
-					for (var i = 0; i < songStates.length; i++) {
-						if (songStates[i] === state) return state.status === "ready" ? readyIndex : -1;
-						if (songStates[i].status === "ready") readyIndex++;
-					}
-					return -1;
-				}
-
-				function stateLabel(state) {
-					if (state.status === "ready") return "可播放";
-					if (state.status === "short") return "非完整音源 · 重试";
-					if (state.status === "failed") return "音源暂不可用 · 重试";
-					return "正在获取音源";
 				}
 
 				function readCache() {
@@ -372,6 +357,28 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					setPlayingUI(false);
 				}
 
+				function recoverAudio(item, resume) {
+					if (!audio || !item || !item.id) return Promise.resolve(null);
+					if (recoveryPromise) return recoveryPromise;
+					recovering = true;
+					var shouldResume = resume && shouldBePlaying;
+					recoveryPromise = refreshSongUrl(item)
+						.then(function (fresh) {
+							if (!fresh || loaded[index] !== item) return fresh;
+							audio.src = fresh.url;
+							if (!shouldResume || !shouldBePlaying) return fresh;
+							return audio.play().then(function () {
+								setPlayingUI(true);
+								return fresh;
+							}).catch(function () { return null; });
+						})
+						.finally(function () {
+							recovering = false;
+							recoveryPromise = null;
+						});
+					return recoveryPromise;
+				}
+
 				function setLoadProgress(done, total, readyCount) {
 					var ratio = total ? done / total : 0;
 					if (loadingBar) loadingBar.style.width = Math.round(ratio * 100) + "%";
@@ -459,31 +466,26 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				function buildList() {
 					if (!listEl) return;
 					listEl.innerHTML = "";
-					for (var i = 0; i < songStates.length; i++) {
-						(function (stateIndex) {
-							var state = songStates[stateIndex];
-							var s = state.item || state.meta;
-							var playableIndex = readyIndexForState(state);
+					var visibleStates = getPlayableSongStates(songStates);
+					for (var i = 0; i < visibleStates.length; i++) {
+						(function (state, playableIndex) {
+							var s = state.item;
 							var li = document.createElement("li");
-							li.className = "qm__item" + (state.status === "ready" ? "" : " is-unavailable");
-							li.setAttribute("data-playable-index", playableIndex >= 0 ? String(playableIndex) : "-1");
+							li.className = "qm__item";
+							li.setAttribute("data-playable-index", String(playableIndex));
 							li.innerHTML = '<span class="qm__idx"></span><span class="qm__item-body"><span class="qm__item-title"></span><span class="qm__item-artist"></span></span><span class="qm__item-status"></span>';
-							li.querySelector(".qm__idx").textContent = String(stateIndex + 1);
+							li.querySelector(".qm__idx").textContent = String(playableIndex + 1);
 							li.querySelector(".qm__item-title").textContent = s.name || s.title || "未知歌曲";
 							li.querySelector(".qm__item-artist").textContent = s.artist || "";
-							li.querySelector(".qm__item-status").textContent = stateLabel(state);
-							if (state.reason) li.title = state.reason;
-							if (playableIndex >= 0) {
-								li.addEventListener("click", function () { playIndex(playableIndex, true); });
-							} else if (state.status !== "loading") {
-								li.addEventListener("click", function () { retrySong(stateIndex); });
-							}
+							li.querySelector(".qm__item-status").textContent = fmt(s.duration);
+							li.addEventListener("click", function () { playIndex(playableIndex, true); });
 							listEl.appendChild(li);
-						})(i);
+						})(visibleStates[i], i);
 					}
 				}
 
 				function apiUrl(base, type, id) {
+					if (type === "song") return getSongApiUrl(base, id);
 					var join = base.indexOf("?") >= 0 ? "&" : "?";
 					return base + join + "server=netease&type=" + encodeURIComponent(type) + "&id=" + encodeURIComponent(id);
 				}
@@ -600,17 +602,14 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (audio.getAttribute("src") !== item.url) {
 						audio.src = item.url;
 					}
-					if (autoplay) {
-						shouldBePlaying = true;
-						audio.play().then(function () { setPlayingUI(true); }).catch(function () {
-							// URL 可能过期：刷新后再播
-							refreshSongUrl(item).then(function (fresh) {
-								if (!fresh) { stopPlaybackIntent(); return; }
-								audio.src = fresh.url;
-								audio.play().then(function () { setPlayingUI(true); }).catch(function () { stopPlaybackIntent(); });
+						if (autoplay) {
+							shouldBePlaying = true;
+							audio.play().then(function () { setPlayingUI(true); }).catch(function () {
+								recoverAudio(item, true).then(function (fresh) {
+									if (!fresh) stopPlaybackIntent();
+								});
 							});
-						});
-					}
+						}
 				}
 
 				function togglePlay() {
@@ -619,10 +618,8 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					else if (audio.paused) {
 						shouldBePlaying = true;
 						audio.play().then(function () { setPlayingUI(true); }).catch(function () {
-							refreshSongUrl(loaded[index]).then(function (fresh) {
-								if (!fresh) { stopPlaybackIntent(); return; }
-								audio.src = fresh.url;
-								audio.play().then(function () { setPlayingUI(true); }).catch(function () { stopPlaybackIntent(); });
+							recoverAudio(loaded[index], true).then(function (fresh) {
+								if (!fresh) stopPlaybackIntent();
 							});
 						});
 					} else {
@@ -649,14 +646,8 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					audio.volume = volume;
 					audio.addEventListener("play", function () { setPlayingUI(true); });
 					audio.addEventListener("pause", function () {
+						if (recovering && shouldBePlaying) return;
 						setPlayingUI(false);
-						if (!shouldBePlaying || recovering || document.hidden || resumeTimer) return;
-						resumeTimer = window.setTimeout(function () {
-							resumeTimer = 0;
-							if (shouldBePlaying && audio.paused && !document.hidden) {
-								audio.play().catch(function () {});
-							}
-						}, 180);
 					});
 					audio.addEventListener("ended", function () {
 						var next = getNextIndex(playbackMode, index, loaded.length);
@@ -664,20 +655,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					});
 					audio.addEventListener("error", function () {
 						var item = loaded[index];
-						if (!item || recovering) return;
-						refreshSongUrl(item).then(function (fresh) {
-							if (!fresh) { stopPlaybackIntent(); return; }
-							var wasPlaying = shouldBePlaying;
-							recovering = true;
-							audio.src = fresh.url;
-							if (wasPlaying) {
-								audio.play().then(function () { recovering = false; }).catch(function () {
-									recovering = false;
-									stopPlaybackIntent();
-								});
-							} else {
-								recovering = false;
-							}
+						if (!item || recoveryPromise) return;
+						var wasPlaying = shouldBePlaying;
+						recoverAudio(item, wasPlaying).then(function (fresh) {
+							if (!fresh && wasPlaying) stopPlaybackIntent();
 						});
 					});
 					audio.addEventListener("timeupdate", function () {
@@ -721,14 +702,15 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					var pendingCount = songStates.filter(function (state) { return state.status === "loading"; }).length;
 					setLoadProgress(done, total, readyCount);
 					if (tipEl) {
-						if (!readyCount && !pendingCount) {
-							tipEl.textContent = "暂无可用音源，但歌单仍保留";
+						if (pendingCount) {
+							tipEl.textContent = "正在获取完整音源 · 已找到 " + readyCount + " 首";
+						} else if (!readyCount) {
+							tipEl.textContent = "暂无完整音源";
 						} else {
-							tipEl.textContent = "共 " + songs.length + " 首 · 当前可播放 " + readyCount + " 首";
-							if (pendingCount) tipEl.textContent += " · 正在获取 " + pendingCount + " 首";
+							tipEl.textContent = "共 " + readyCount + " 首完整音源";
 						}
 					}
-					if (loadingTitle && !readyCount && !pendingCount) loadingTitle.textContent = "暂无可用音源";
+					if (loadingTitle && !readyCount && !pendingCount) loadingTitle.textContent = "暂无完整音源";
 					if (loadingSub && !readyCount && !pendingCount) loadingSub.textContent = "可稍后重试或更换 musicPlayer.api";
 				}
 
@@ -761,28 +743,6 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					}
 					syncLoaded();
 					buildList();
-				}
-
-				function retrySong(stateIndex) {
-					var state = songStates[stateIndex];
-					if (!state || state.status === "loading") return Promise.resolve(null);
-					var currentId = loaded[index] && loaded[index].id;
-					var hadReadySong = loaded.length > 0;
-					state.status = "loading";
-					state.reason = "";
-					buildList();
-					updateSummary(songs.length - songStates.filter(function (item) { return item.status === "loading"; }).length, songs.length);
-					return fetchSong(state.meta).then(function (result) {
-						applyFetchResult(stateIndex, result);
-						if (currentId) {
-							var nextIndex = loaded.findIndex(function (item) { return String(item.id) === String(currentId); });
-							if (nextIndex >= 0) index = nextIndex;
-						}
-						if (!hadReadySong && loaded.length) playIndex(0, false);
-						writeCache(loaded);
-						updateSummary(songs.length - songStates.filter(function (item) { return item.status === "loading"; }).length, songs.length);
-						return result;
-					});
 				}
 
 				function fetchAll() {
@@ -1416,15 +1376,13 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			.qm__list::-webkit-scrollbar-thumb {
 				background: oklch(0.8 0.08 var(--hue) / 0.3); border-radius: 99px;
 			}
-			.qm__item {
-				display: flex; align-items: center; gap: 0.55rem;
-				padding: 0.55rem 0.6rem; border-radius: 0.65rem; cursor: pointer;
-				transition: background 140ms ease;
-			}
-			.qm__item:hover { background: rgba(255,255,255,0.07); }
-			.qm__item.is-unavailable { opacity: 0.62; }
-			.qm__item.is-unavailable:hover { background: rgba(255,255,255,0.06); }
-			.qm__item.is-active { background: oklch(0.55 0.12 var(--hue) / 0.32); }
+				.qm__item {
+					display: flex; align-items: center; gap: 0.55rem;
+					padding: 0.55rem 0.6rem; border-radius: 0.65rem; cursor: pointer;
+					transition: background 140ms ease;
+				}
+				.qm__item:hover { background: rgba(255,255,255,0.07); }
+				.qm__item.is-active { background: oklch(0.55 0.12 var(--hue) / 0.32); }
 			.qm__idx {
 				width: 1.2rem; text-align: center; font-size: 0.72rem; opacity: 0.45;
 				font-variant-numeric: tabular-nums;

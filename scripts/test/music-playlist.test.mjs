@@ -4,6 +4,8 @@ import test from "node:test";
 import {
 	classifyDuration,
 	getApiFingerprint,
+	getPlayableSongStates,
+	getSongApiUrl,
 	getSongIdsFingerprint,
 	MAX_PLAYLIST_SIZE,
 	normalizeApiSong,
@@ -62,6 +64,28 @@ test("normalizes Meting payloads without trusting missing fields", () => {
 		duration: null,
 	});
 	assert.equal(normalizeApiSong(song(8), { title: "没有音源" }), null);
+
+	const enhanced = normalizeApiSong(song(9), {
+		data: {
+			url: "http://audio.test/9.mp3",
+			al_name: "接口专辑",
+			ar_name: "接口歌手",
+		},
+	});
+	assert.equal(enhanced.url, "https://audio.test/9.mp3");
+	assert.equal(enhanced.name, "歌曲9");
+	assert.equal(enhanced.artist, "歌手9");
+});
+
+test("builds both enhanced and Meting song requests", () => {
+	assert.equal(
+		getSongApiUrl("https://music.rrvenn.cn/song", "9"),
+		"https://music.rrvenn.cn/song?id=9&type=json&level=exhigh",
+	);
+	assert.equal(
+		getSongApiUrl("https://api.i-meto.com/meting/api", "9"),
+		"https://api.i-meto.com/meting/api?server=netease&type=song&id=9",
+	);
 });
 
 test("classifies full-length, preview, and unknown durations", () => {
@@ -69,6 +93,22 @@ test("classifies full-length, preview, and unknown durations", () => {
 	assert.equal(classifyDuration(45, 90), "short");
 	assert.equal(classifyDuration(0, 90), "unknown");
 	assert.equal(classifyDuration(Number.NaN, 90), "unknown");
+});
+
+test("keeps only complete ready states for the visible playlist", () => {
+	const states = [
+		{ status: "loading", item: null },
+		{ status: "short", item: null },
+		{ status: "ready", item: { id: "ready-1" } },
+		{ status: "failed", item: null },
+		{ status: "ready", item: null },
+		{ status: "ready", item: { id: "ready-2" } },
+	];
+
+	assert.deepEqual(
+		getPlayableSongStates(states).map((state) => state.item.id),
+		["ready-1", "ready-2"],
+	);
 });
 
 test("site configuration keeps 20 to 30 songs with unique artists", async () => {
@@ -93,16 +133,36 @@ test("site configuration keeps 20 to 30 songs with unique artists", async () => 
 	);
 });
 
-test("player keeps unavailable rows visible and uses the versioned retry flow", async () => {
+test("player hides unavailable rows and uses the versioned complete-source flow", async () => {
 	const source = await readFile(
 		new URL("../../src/components/fun/MusicPlayer.astro", import.meta.url),
 		"utf8",
 	);
 	assert.match(source, /MUSIC_CACHE_VERSION/);
+	assert.match(source, /getPlayableSongStates/);
 	assert.match(source, /var songStates = songs\.map/);
-	assert.match(source, /function retrySong\(stateIndex\)/);
-	assert.match(source, /非完整音源 · 重试/);
-	assert.match(source, /音源暂不可用 · 重试/);
-	assert.match(source, /li\.querySelector\("\.qm__item-status"\)/);
+	assert.match(source, /共 " \+ readyCount \+ " 首完整音源/);
+	assert.doesNotMatch(source, /非完整音源 · 重试/);
+	assert.doesNotMatch(source, /音源暂不可用 · 重试/);
+	assert.match(
+		source,
+		/li\.querySelector\("\.qm__item-status"\)\.textContent = fmt\(s\.duration\)/,
+	);
+	assert.doesNotMatch(source, /textContent = "完整音源"/);
 	assert.match(source, /function probeAudio\(item\)/);
+});
+
+test("playback recovery does not loop after an audio pause", async () => {
+	const source = await readFile(
+		new URL("../../src/components/fun/MusicPlayer.astro", import.meta.url),
+		"utf8",
+	);
+	const pauseStart = source.indexOf('audio.addEventListener("pause"');
+	const errorStart = source.indexOf('audio.addEventListener("error"');
+	assert.ok(pauseStart >= 0 && errorStart > pauseStart);
+
+	const pauseHandler = source.slice(pauseStart, errorStart);
+	assert.doesNotMatch(pauseHandler, /audio\.play\(\)/);
+	assert.match(source, /var recoveryPromise = null;/);
+	assert.match(source, /function recoverAudio\(item, resume\)/);
 });

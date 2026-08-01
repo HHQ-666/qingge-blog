@@ -1,5 +1,5 @@
 export const MAX_PLAYLIST_SIZE = 30;
-export const MUSIC_CACHE_VERSION = "v3";
+export const MUSIC_CACHE_VERSION = "v4";
 
 export function normalizeSongConfig(entries) {
 	const seenArtists = new Set();
@@ -24,6 +24,12 @@ export function getSongIdsFingerprint(songs) {
 	return songs.map((song) => String(song.id)).join(",");
 }
 
+export function getPlayableSongStates(states) {
+	return (Array.isArray(states) ? states : []).filter(
+		(state) => state?.status === "ready" && state?.item,
+	);
+}
+
 export function getApiFingerprint(api, fallbackApis) {
 	return [
 		...new Set(
@@ -34,18 +40,53 @@ export function getApiFingerprint(api, fallbackApis) {
 	].join("|");
 }
 
+export function getSongApiUrl(base, id) {
+	const normalizedBase = String(base || "")
+		.trim()
+		.replace(/\/+$/, "");
+	const encodedId = encodeURIComponent(String(id));
+	if (/\/song$/i.test(normalizedBase)) {
+		return `${normalizedBase}?id=${encodedId}&type=json&level=exhigh`;
+	}
+
+	const join = normalizedBase.includes("?") ? "&" : "?";
+	return `${normalizedBase}${join}server=netease&type=song&id=${encodedId}`;
+}
+
 export function normalizeApiSong(meta, payload) {
-	const source = Array.isArray(payload) ? payload[0] : payload;
-	const url = String(source?.url || "").trim();
-	if (!url) return null;
+	const source = Array.isArray(payload)
+		? payload[0]
+		: payload?.data && typeof payload.data === "object"
+			? payload.data
+			: payload;
+	const rawUrl = String(source?.url || "").trim();
+	if (!rawUrl) return null;
+
+	let url;
+	try {
+		const parsed = new URL(rawUrl);
+		if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+			return null;
+		}
+		if (parsed.protocol === "http:") parsed.protocol = "https:";
+		url = parsed.toString();
+	} catch {
+		return null;
+	}
 
 	const duration = Number(source?.duration);
 	return {
 		id: String(meta.id),
-		name: meta.title || source.name || source.title || String(meta.id),
-		artist: meta.artist || source.artist || source.author || "",
+		name:
+			meta.title ||
+			source.name ||
+			source.title ||
+			source.al_name ||
+			String(meta.id),
+		artist:
+			meta.artist || source.artist || source.author || source.ar_name || "",
 		url,
-		cover: source.pic || source.cover || "",
+		cover: source.pic || source.cover || source.picUrl || "",
 		duration: Number.isFinite(duration) && duration > 0 ? duration : null,
 	};
 }

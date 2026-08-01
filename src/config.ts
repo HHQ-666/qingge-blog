@@ -145,7 +145,6 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 	theme: "github-light",
 };
 
-
 /**
  * 作者写作台入口（仅自己可见）
  * - /admin/ 使用同一口令 + GitHub Token 进入发布后台
@@ -245,9 +244,12 @@ export const funConfig = {
 		minDurationSec: 90,
 		/** 歌单缓存小时数，刷新页面直接用缓存 */
 		cacheHours: 6,
-		/** 主音源代理；遇到限流或服务故障时会自动尝试备用代理。 */
-		api: "https://api.i-meto.com/meting/api",
-		fallbackApis: ["https://api.injahow.cn/meting/"],
+		/** 主音源返回完整歌曲；遇到限流或服务故障时会自动尝试备用代理。 */
+		api: "https://music.rrvenn.cn/song",
+		fallbackApis: [
+			"https://api.i-meto.com/meting/api",
+			"https://api.injahow.cn/meting/",
+		],
 		/**
 		 * 歌单。优先放实测可完整播放的曲目。
 		 * 周杰伦部分歌曲接口常被墙，已从默认列表去掉，避免点了没声。
@@ -274,6 +276,15 @@ export const funConfig = {
 			{ id: "28819044", title: "大约在冬季", artist: "齐秦" },
 			{ id: "158924", title: "一场游戏一场梦", artist: "王杰" },
 			{ id: "187338", title: "爱如潮水", artist: "张信哲" },
+			{ id: "187134", title: "朋友", artist: "周华健" },
+			{ id: "212233", title: "千千阙歌", artist: "陈慧娴" },
+			{ id: "110740", title: "忘情水", artist: "刘德华" },
+			{ id: "308518", title: "领悟", artist: "辛晓琪" },
+			{ id: "187899", title: "我期待", artist: "张雨生" },
+			{ id: "109198", title: "恋曲1990", artist: "罗大佑" },
+			{ id: "280175", title: "征服", artist: "那英" },
+			{ id: "104527", title: "再回首", artist: "姜育恒" },
+			{ id: "256621", title: "至少还有你", artist: "林忆莲" },
 		],
 	},
 };
