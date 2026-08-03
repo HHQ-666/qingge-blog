@@ -231,7 +231,8 @@ export const funConfig = {
 	/**
 	 * 华语金曲播放器（APlayer + Meting 可播放音源）
 	 * 说明：
-	 * - 会自动探测完整音源；版权严格的歌曲（部分周杰伦）可能被跳过
+	 * - 首次打开时探测音源，同一自然月直接复用已验证的播放地址
+	 * - 每月自动轮换候选顺序；不完整或失效歌曲会被候补歌曲替换
 	 * - api 失效时可换成其它 Meting 实例
 	 */
 	musicPlayer: {
@@ -242,8 +243,8 @@ export const funConfig = {
 		themeColor: "#e8a35c",
 		/** 短于该秒数的视为试听，自动跳过 */
 		minDurationSec: 90,
-		/** 歌单缓存小时数，刷新页面直接用缓存 */
-		cacheHours: 6,
+		/** 每月从候选池中补足并显示的歌曲数量 */
+		playlistSize: 30,
 		/** 主音源返回完整歌曲；遇到限流或服务故障时会自动尝试备用代理。 */
 		api: "https://music.rrvenn.cn/song",
 		fallbackApis: [
@@ -251,8 +252,8 @@ export const funConfig = {
 			"https://api.injahow.cn/meting/",
 		],
 		/**
-		 * 歌单。优先放实测可完整播放的曲目。
-		 * 周杰伦部分歌曲接口常被墙，已从默认列表去掉，避免点了没声。
+		 * 候选歌单。播放器每月轮换顺序，并从后续候选中替换掉不可播放曲目。
+		 * 所有候选均经过接口与时长探测；运行时仍会再次验证临时播放地址。
 		 */
 		songs: [
 			{ id: "1934168650", title: "此生不换", artist: "青鸟飞鱼" },
@@ -285,6 +286,22 @@ export const funConfig = {
 			{ id: "280175", title: "征服", artist: "那英" },
 			{ id: "104527", title: "再回首", artist: "姜育恒" },
 			{ id: "256621", title: "至少还有你", artist: "林忆莲" },
+			{ id: "327345", title: "爱的代价", artist: "张艾嘉" },
+			{ id: "115502", title: "红日", artist: "李克勤" },
+			{ id: "168091", title: "蓝莲花", artist: "许巍" },
+			{ id: "152392", title: "讲不出再见", artist: "谭咏麟" },
+			{ id: "82914", title: "一剪梅", artist: "费玉清" },
+			{ id: "298456", title: "新不了情", artist: "万芳" },
+			{ id: "293927", title: "野花", artist: "田震" },
+			{ id: "188746", title: "我是一只小小鸟", artist: "赵传" },
+			{ id: "3362290991", title: "祝福", artist: "叶倩文" },
+			{ id: "108119", title: "恋恋风尘", artist: "老狼" },
+			{ id: "1298402744", title: "纤夫的爱", artist: "尹相杰" },
+			{ id: "1962191920", title: "涛声依旧", artist: "毛宁" },
+			{ id: "1958429350", title: "弯弯的月亮", artist: "刘欢" },
+			{ id: "190495", title: "雨一直下", artist: "张宇" },
+			{ id: "287627", title: "回家", artist: "顺子" },
+			{ id: "144619", title: "心太软", artist: "任贤齐" },
 		],
 	},
 };

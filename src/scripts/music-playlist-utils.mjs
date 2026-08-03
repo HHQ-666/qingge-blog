@@ -1,9 +1,13 @@
 export const MAX_PLAYLIST_SIZE = 30;
-export const MUSIC_CACHE_VERSION = "v4";
+export const MAX_CANDIDATE_SIZE = 60;
+export const MUSIC_CACHE_VERSION = "v5";
 
-export function normalizeSongConfig(entries) {
+export function normalizeSongConfig(entries, limit = MAX_PLAYLIST_SIZE) {
 	const seenArtists = new Set();
 	const normalized = [];
+	const maxItems = Number.isFinite(Number(limit))
+		? Math.max(1, Math.floor(Number(limit)))
+		: MAX_PLAYLIST_SIZE;
 
 	for (const entry of Array.isArray(entries) ? entries : []) {
 		const id = String(entry?.id || "").trim();
@@ -14,10 +18,36 @@ export function normalizeSongConfig(entries) {
 
 		seenArtists.add(artistKey);
 		normalized.push({ id, title, artist });
-		if (normalized.length === MAX_PLAYLIST_SIZE) break;
+		if (normalized.length === maxItems) break;
 	}
 
 	return normalized;
+}
+
+export function getCalendarMonthKey(date = new Date()) {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, "0");
+	return `${year}-${month}`;
+}
+
+export function getMonthlySongCandidates(
+	entries,
+	monthKey,
+	limit = MAX_CANDIDATE_SIZE,
+) {
+	const normalized = normalizeSongConfig(entries, limit);
+	if (normalized.length < 2) return normalized;
+
+	const [year, month] = String(monthKey || "")
+		.split("-")
+		.map((value) => Number(value));
+	const monthIndex =
+		Number.isFinite(year) && Number.isFinite(month) && month >= 1 && month <= 12
+			? year * 12 + month - 1
+			: 0;
+	const offset =
+		((monthIndex % normalized.length) + normalized.length) % normalized.length;
+	return normalized.slice(offset).concat(normalized.slice(0, offset));
 }
 
 export function getSongIdsFingerprint(songs) {

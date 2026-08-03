@@ -6,10 +6,13 @@
  * - localStorage 缓存歌单，刷新页面不重复探测
  */
 import { funConfig } from "../../config";
-import { normalizeSongConfig } from "../../scripts/music-playlist-utils.mjs";
+import {
+	MAX_CANDIDATE_SIZE,
+	normalizeSongConfig,
+} from "../../scripts/music-playlist-utils.mjs";
 
 const conf = funConfig.musicPlayer;
-const songs = normalizeSongConfig(conf?.songs);
+const songs = normalizeSongConfig(conf?.songs, MAX_CANDIDATE_SIZE);
 const enabled = Boolean(conf?.enable && songs.length);
 const songsJson = enabled ? JSON.stringify(songs) : "[]";
 const api = conf?.api || "https://api.injahow.cn/meting/";
@@ -21,8 +24,7 @@ const volume = String(conf?.volume ?? 0.55);
 const title = conf?.panelTitle || "华语金曲电台";
 const subtitle = conf?.panelSubtitle || "80 / 90 / 00 经典";
 const minDurationSec = String(conf?.minDurationSec ?? 90);
-/** 缓存有效期（小时），代理 URL 会过期，不宜过长 */
-const cacheHours = String(conf?.cacheHours ?? 6);
+const visiblePlaylistSize = String(conf?.playlistSize ?? 30);
 ---
 
 {
@@ -35,7 +37,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 			data-apis={apisJson}
 			data-volume={volume}
 			data-min-duration={minDurationSec}
-			data-cache-hours={cacheHours}
+			data-visible-playlist-size={visiblePlaylistSize}
 		>
 			{/* 默认：圆盘 FAB */}
 			<button type="button" class="qm__fab" id="qm-toggle" title="打开华语金曲电台" aria-expanded="false">
@@ -94,7 +96,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					<div class="qm__loading" id="qm-loading" hidden>
 						<div class="qm__orbit" aria-hidden="true"><span /><span /><span /></div>
 						<p class="qm__loading-title" id="qm-loading-title">正在加载歌单</p>
-						<p class="qm__loading-sub" id="qm-loading-sub">首次加载后会缓存，刷新不用重来</p>
+						<p class="qm__loading-sub" id="qm-loading-sub">首次打开后缓存，本月不重复获取</p>
 						<div class="qm__track"><div class="qm__track-fill" id="qm-loading-bar" /></div>
 						<p class="qm__loading-pct" id="qm-loading-pct">0%</p>
 					</div>
@@ -139,7 +141,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					</div>
 				</div>
 			</div>
-			<audio id="qm-audio" preload="metadata" />
+			<audio id="qm-audio" preload="none" />
 		</div>
 	)
 }
@@ -148,10 +150,12 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 	enabled && (
 		<script>
           // @ts-nocheck
-          import {
+			import {
 				MUSIC_CACHE_VERSION,
 				classifyDuration,
+				getCalendarMonthKey,
 				getApiFingerprint,
+				getMonthlySongCandidates,
 				getPlayableSongStates,
 				getSongApiUrl,
 				getSongIdsFingerprint,
@@ -172,6 +176,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				var songs = [];
 				try { songs = JSON.parse(root.getAttribute("data-songs") || "[]"); } catch (e) { songs = []; }
 				if (!songs.length) return;
+				var monthKey = getCalendarMonthKey();
+				songs = getMonthlySongCandidates(songs, monthKey);
+				if (!songs.length) return;
 
 				var apiBases = [];
 				try { apiBases = JSON.parse(root.getAttribute("data-apis") || "[]"); } catch (e) { apiBases = []; }
@@ -183,10 +190,11 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				if (isNaN(volume)) volume = 0.55;
 				var minDurationSec = parseFloat(root.getAttribute("data-min-duration") || "90");
 				if (!isFinite(minDurationSec) || minDurationSec <= 0) minDurationSec = 90;
-				var cacheHours = parseFloat(root.getAttribute("data-cache-hours") || "6");
-				if (isNaN(cacheHours) || cacheHours < 0.5) cacheHours = 6;
+				var visiblePlaylistSize = parseInt(root.getAttribute("data-visible-playlist-size") || "30", 10);
+				if (!isFinite(visiblePlaylistSize) || visiblePlaylistSize < 1) visiblePlaylistSize = 30;
+				visiblePlaylistSize = Math.min(visiblePlaylistSize, 30);
 
-				var CACHE_KEY = "qingge-music-playlist-" + MUSIC_CACHE_VERSION;
+				var CACHE_KEY = "qingge-music-playlist-" + MUSIC_CACHE_VERSION + "-" + monthKey;
 
 				var toggle = document.getElementById("qm-toggle");
 				var miniExpandMeta = document.getElementById("qm-mini-expand-meta");
@@ -237,6 +245,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 
 				function syncLoaded() {
 					loaded = getPlayableSongStates(songStates)
+						.slice(0, visiblePlaylistSize)
 						.map(function (state) { return state.item; });
 					if (loaded.length && index >= loaded.length) index = 0;
 				}
@@ -247,10 +256,9 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						if (!raw) return null;
 						var data = JSON.parse(raw);
 						if (!data || data.version !== MUSIC_CACHE_VERSION || !data.items || !data.items.length) return null;
+						if (data.month !== monthKey || data.target !== visiblePlaylistSize) return null;
 						if (data.api !== apiFingerprint) return null;
 						if (data.ids !== songIdsFingerprint()) return null;
-						var age = Date.now() - (data.ts || 0);
-						if (age > cacheHours * 3600 * 1000) return null;
 						return data.items;
 					} catch (e) {
 						return null;
@@ -261,8 +269,10 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					try {
 						localStorage.setItem(
 							CACHE_KEY,
-							JSON.stringify({
+						JSON.stringify({
 								version: MUSIC_CACHE_VERSION,
+								month: monthKey,
+								target: visiblePlaylistSize,
 								ts: Date.now(),
 								api: apiFingerprint,
 								ids: songIdsFingerprint(),
@@ -303,11 +313,24 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				}
 
 				syncPlaybackModeButton();
-				if (playbackModeBtn) playbackModeBtn.addEventListener("click", function () {
-					setPlaybackMode(nextPlaybackMode(playbackMode));
-				});
+			if (playbackModeBtn) playbackModeBtn.addEventListener("click", function () {
+				setPlaybackMode(nextPlaybackMode(playbackMode));
+			});
 
-				/** mode: 'fab' | 'full' | 'compact' */
+			function resetUnavailablePlaylist() {
+				for (var i = 0; i < songStates.length; i++) {
+					songStates[i].status = "loading";
+					songStates[i].item = null;
+					songStates[i].reason = "";
+				}
+				loaded = [];
+				index = 0;
+				loadPromise = null;
+				buildList();
+				showLoading();
+			}
+
+			/** mode: 'fab' | 'full' | 'compact' */
 				function setMode(mode) {
 					var isFull = mode === "full";
 					var isCompact = mode === "compact";
@@ -315,9 +338,13 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					root.classList.toggle("is-open", isFull);
 					root.classList.toggle("is-compact", isCompact);
 					if (toggle) toggle.setAttribute("aria-expanded", isFull ? "true" : "false");
-					if (miniEl) miniEl.hidden = !isCompact;
-					try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
-					if (isFull || isCompact) ensureLoaded();
+			if (miniEl) miniEl.hidden = !isCompact;
+			try { localStorage.setItem(MODE_KEY, mode); } catch (e) {}
+			if (isFull || isCompact) {
+				var hasPendingCandidates = songStates.some(function (state) { return state.status === "loading"; });
+				if (loadPromise && loaded.length < visiblePlaylistSize && !hasPendingCandidates) resetUnavailablePlaylist();
+				ensureLoaded();
+			}
 				}
 				if (toggle) toggle.addEventListener("click", function () {
 					setMode("full");
@@ -396,10 +423,11 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					if (readyEl) readyEl.hidden = true;
 				}
 
-				function setNow(item) {
-					if (!item) return;
-					if (songEl) songEl.textContent = item.name || "未知歌曲";
-					if (artistEl) artistEl.textContent = item.artist || "";
+			function setNow(item) {
+				if (!item) return;
+				if (songEl) songEl.textContent = item.name || "未知歌曲";
+				if (artistEl) artistEl.textContent = item.artist || "";
+				if (durEl && item.duration) durEl.textContent = fmt(item.duration);
 					if (miniSongEl) miniSongEl.textContent = item.name || "未知歌曲";
 					if (miniArtistEl) miniArtistEl.textContent = item.artist || "华语金曲电台";
 					if ("mediaSession" in navigator && "MediaMetadata" in window) {
@@ -466,7 +494,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 				function buildList() {
 					if (!listEl) return;
 					listEl.innerHTML = "";
-					var visibleStates = getPlayableSongStates(songStates);
+					var visibleStates = getPlayableSongStates(songStates).slice(0, visiblePlaylistSize);
 					for (var i = 0; i < visibleStates.length; i++) {
 						(function (state, playableIndex) {
 							var s = state.item;
@@ -703,14 +731,14 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					setLoadProgress(done, total, readyCount);
 					if (tipEl) {
 						if (pendingCount) {
-							tipEl.textContent = "正在获取完整音源 · 已找到 " + readyCount + " 首";
+							tipEl.textContent = "正在整理歌单 · 已准备 " + Math.min(readyCount, visiblePlaylistSize) + " 首";
 						} else if (!readyCount) {
-							tipEl.textContent = "暂无完整音源";
+							tipEl.textContent = "暂时没有可播放歌曲";
 						} else {
-							tipEl.textContent = "共 " + readyCount + " 首完整音源";
+							tipEl.textContent = "共 " + Math.min(readyCount, visiblePlaylistSize) + " 首可播放";
 						}
 					}
-					if (loadingTitle && !readyCount && !pendingCount) loadingTitle.textContent = "暂无完整音源";
+					if (loadingTitle && !readyCount && !pendingCount) loadingTitle.textContent = "暂时没有可播放歌曲";
 					if (loadingSub && !readyCount && !pendingCount) loadingSub.textContent = "可稍后重试或更换 musicPlayer.api";
 				}
 
@@ -722,6 +750,11 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 						state.status = "ready";
 						state.item = cached;
 						state.reason = "cache";
+					}
+					if (getPlayableSongStates(songStates).length >= visiblePlaylistSize) {
+						for (var j = 0; j < songStates.length; j++) {
+							if (songStates[j].status === "loading") songStates[j].status = "skipped";
+						}
 					}
 					syncLoaded();
 					buildList();
@@ -745,12 +778,26 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					buildList();
 				}
 
+				function skipRemainingCandidates() {
+					for (var i = 0; i < songStates.length; i++) {
+						if (songStates[i].status === "loading") songStates[i].status = "skipped";
+					}
+				}
+
 				function fetchAll() {
 					var targetIndexes = [];
 					for (var i = 0; i < songStates.length; i++) {
 						if (songStates[i].status === "loading") targetIndexes.push(i);
 					}
-						if (!targetIndexes.length) {
+					if (getPlayableSongStates(songStates).length >= visiblePlaylistSize) {
+						skipRemainingCandidates();
+						syncLoaded();
+						buildList();
+						updateSummary(songs.length, songs.length);
+						showReady();
+						return Promise.resolve();
+					}
+					if (!targetIndexes.length) {
 						updateSummary(songs.length, songs.length);
 						showReady();
 						return Promise.resolve();
@@ -762,7 +809,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					var completed = songs.length - targetIndexes.length;
 					var concurrency = 2;
 					function next() {
-						if (cursor >= targetIndexes.length) return Promise.resolve();
+						if (cursor >= targetIndexes.length || getPlayableSongStates(songStates).length >= visiblePlaylistSize) return Promise.resolve();
 						var stateIndex = targetIndexes[cursor++];
 						return fetchSong(songStates[stateIndex].meta)
 							.then(function (result) {
@@ -781,6 +828,7 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					var starters = [];
 					for (var c = 0; c < Math.min(concurrency, targetIndexes.length); c++) starters.push(next());
 					return Promise.all(starters).then(function () {
+						skipRemainingCandidates();
 						syncLoaded();
 						buildList();
 						writeCache(loaded);
@@ -805,17 +853,6 @@ const cacheHours = String(conf?.cacheHours ?? 6);
 					return loadPromise;
 				}
 
-				var cachedBoot = readCache();
-				if (cachedBoot && cachedBoot.length) {
-					applyCachedItems(cachedBoot);
-					if (songStates.some(function (state) { return state.status === "loading"; })) {
-						setTimeout(function () { ensureLoaded(); }, 1200);
-					}
-				} else if ("requestIdleCallback" in window) {
-					requestIdleCallback(function () { ensureLoaded(); }, { timeout: 4000 });
-				} else {
-					setTimeout(function () { ensureLoaded(); }, 1200);
-				}
 			})();
 		</script>
 	)

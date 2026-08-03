@@ -3,10 +3,14 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import {
 	classifyDuration,
+	getCalendarMonthKey,
 	getApiFingerprint,
+	getMonthlySongCandidates,
 	getPlayableSongStates,
 	getSongApiUrl,
 	getSongIdsFingerprint,
+	MUSIC_CACHE_VERSION,
+	MAX_CANDIDATE_SIZE,
 	MAX_PLAYLIST_SIZE,
 	normalizeApiSong,
 	normalizeSongConfig,
@@ -30,6 +34,30 @@ test("normalizes to at most 30 songs and keeps the first song per artist", () =>
 	assert.equal(normalized.length, 30);
 	assert.equal(normalized.filter((item) => item.artist === "甲").length, 1);
 	assert.equal(normalized[0].id, "1");
+});
+
+test("derives a stable calendar month and rotates the candidate pool monthly", () => {
+	const august = new Date("2026-08-03T10:00:00+08:00");
+	const september = new Date("2026-09-03T10:00:00+08:00");
+
+	assert.equal(getCalendarMonthKey(august), "2026-08");
+	assert.deepEqual(
+		getMonthlySongCandidates([song(1), song(2), song(3), song(4)], "2026-08"),
+		getMonthlySongCandidates([song(1), song(2), song(3), song(4)], "2026-08"),
+	);
+	assert.notDeepEqual(
+		getMonthlySongCandidates([song(1), song(2), song(3), song(4)], "2026-08"),
+		getMonthlySongCandidates([song(1), song(2), song(3), song(4)], "2026-09"),
+	);
+	assert.equal(MUSIC_CACHE_VERSION, "v5");
+});
+
+test("keeps a larger unique fallback pool while allowing a visible playlist limit", () => {
+	const candidates = Array.from({ length: 36 }, (_, i) => song(i + 1));
+	const monthly = getMonthlySongCandidates(candidates, "2026-08", 36);
+
+	assert.equal(monthly.length, 36);
+	assert.equal(new Set(monthly.map((item) => item.artist)).size, 36);
 });
 
 test("cache fingerprints change when songs or APIs change", () => {
@@ -126,7 +154,9 @@ test("site configuration keeps 20 to 30 songs with unique artists", async () => 
 			/\{\s*id:\s*"([^"]+)",\s*title:\s*"([^"]+)",\s*artist:\s*"([^"]+)"\s*\}/g,
 		),
 	].map((match) => ({ id: match[1], title: match[2], artist: match[3] }));
-	assert.ok(entries.length >= 20 && entries.length <= MAX_PLAYLIST_SIZE);
+	assert.ok(
+		entries.length >= MAX_PLAYLIST_SIZE && entries.length <= MAX_CANDIDATE_SIZE,
+	);
 	assert.equal(
 		new Set(entries.map((entry) => entry.artist)).size,
 		entries.length,
@@ -141,7 +171,10 @@ test("player hides unavailable rows and uses the versioned complete-source flow"
 	assert.match(source, /MUSIC_CACHE_VERSION/);
 	assert.match(source, /getPlayableSongStates/);
 	assert.match(source, /var songStates = songs\.map/);
-	assert.match(source, /共 " \+ readyCount \+ " 首完整音源/);
+	assert.match(
+		source,
+		/共 " \+ Math\.min\(readyCount, visiblePlaylistSize\) \+ " 首可播放/,
+	);
 	assert.doesNotMatch(source, /非完整音源 · 重试/);
 	assert.doesNotMatch(source, /音源暂不可用 · 重试/);
 	assert.match(
@@ -150,6 +183,17 @@ test("player hides unavailable rows and uses the versioned complete-source flow"
 	);
 	assert.doesNotMatch(source, /textContent = "完整音源"/);
 	assert.match(source, /function probeAudio\(item\)/);
+	assert.match(source, /getCalendarMonthKey/);
+	assert.match(source, /getMonthlySongCandidates/);
+	assert.doesNotMatch(source, /data-cache-hours/);
+	assert.doesNotMatch(source, /requestIdleCallback/);
+	assert.match(source, /preload="none"/);
+	assert.doesNotMatch(source, /var cachedBoot = readCache/);
+	assert.match(source, /function resetUnavailablePlaylist\(\)/);
+	assert.match(
+		source,
+		/getPlayableSongStates\(songStates\)\.length >= visiblePlaylistSize/,
+	);
 });
 
 test("playback recovery does not loop after an audio pause", async () => {
