@@ -26,6 +26,11 @@ function getAvailableActionEntries(pet, available) {
 	);
 }
 
+function getPrimaryActionEntry(pet, available) {
+	const actions = getAvailableActionEntries(pet, available);
+	return actions.find((action) => action.id === "cute") ?? actions[0] ?? null;
+}
+
 function pickRandomMotion(available, random = Math.random) {
 	const candidates = Object.entries(available ?? {})
 		.filter(([group, files]) =>
@@ -35,4 +40,9 @@ function pickRandomMotion(available, random = Math.random) {
 	return candidates.length ? candidates[Math.floor(random() * candidates.length)] : null;
 }
 
-export { getActionEntries, getAvailableActionEntries, pickRandomMotion };
+export {
+	getActionEntries,
+	getAvailableActionEntries,
+	getPrimaryActionEntry,
+	pickRandomMotion,
+};

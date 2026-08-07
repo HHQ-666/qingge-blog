@@ -3,6 +3,7 @@ import test from "node:test";
 import {
 	getActionEntries,
 	getAvailableActionEntries,
+	getPrimaryActionEntry,
 	pickRandomMotion,
 } from "../../src/scripts/pet-actions.mjs";
 
@@ -32,6 +33,22 @@ test("组动作按组和索引校验", () => {
 	const available = { Dance: ["motions/dance.mtn"] };
 	const result = getAvailableActionEntries(pet, available);
 	assert.deepEqual(result.map((item) => item.id), ["dance"]);
+});
+
+test("主要动作优先选择可用的 cute 动作", () => {
+	const available = {
+		"": ["motions/cute.mtn", "motions/other.mtn"],
+		Dance: ["motions/dance.mtn"],
+	};
+	assert.deepEqual(getPrimaryActionEntry(pet, available), {
+		id: "cute",
+		label: "卖萌",
+		file: "motions/cute.mtn",
+	});
+});
+
+test("没有可播放动作时主要动作返回 null", () => {
+	assert.equal(getPrimaryActionEntry({ actions: {} }, { idle: ["motions/idle.mtn"] }), null);
 });
 
 test("随机动作排除 idle 组并返回可播放文件", () => {
