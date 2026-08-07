@@ -1,0 +1,107 @@
+{
+	"pets": [
+		{
+			"id": "tororo",
+			"name": "白猫·豆豆",
+			"scale": 0.06,
+			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json",
+			"avatar": "/pets/avatars/tororo.svg"
+		},
+		{
+			"id": "hijiki",
+			"name": "黑猫·煤球",
+			"scale": 0.06,
+			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json",
+			"avatar": "/pets/avatars/hijiki.svg"
+		},
+		{
+			"id": "pio",
+			"name": "少女·Pio",
+			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Pio/model.json",
+			"avatar": "/pets/avatars/pio.svg",
+			"quotes": [
+				"再看我就要害羞啦~",
+				"今天也要一起加油哦!",
+				"给你一个元气抱抱~"
+			],
+			"actions": {
+				"cute": {
+					"label": "卖萌",
+					"file": "motions/Touch Dere1.mtn",
+					"message": "再看我就要害羞啦~"
+				},
+				"tease": {
+					"label": "撒娇",
+					"file": "motions/Touch Dere2.mtn",
+					"message": "人家才没有在撒娇呢!"
+				},
+				"dance": {
+					"label": "开心",
+					"file": "motions/Success.mtn",
+					"message": "开心转圈给你看~"
+				},
+				"sleep": {
+					"label": "睡觉",
+					"file": "motions/Sleeping.mtn",
+					"message": "晚安啦,做个好梦~"
+				}
+			}
+		},
+		{
+			"id": "senko",
+			"name": "狐娘·仙狐",
+			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Senko_Normals/senko.model3.json",
+			"avatar": "/pets/avatars/senko.svg",
+			"quotes": [
+				"来,让姐姐给你加加油~",
+				"摸摸头,今天也辛苦了。",
+				"一起听首歌放松一下吧~"
+			],
+			"actions": {
+				"cute": {
+					"label": "卖萌",
+					"file": "motions/Anim_1.motion3.json",
+					"message": "乖,给你一个摸摸头~"
+				},
+				"dance": {
+					"label": "唱歌",
+					"file": "motions/Singing.motion3.json",
+					"message": "听仙狐姐姐唱一首~"
+				},
+				"sleep": {
+					"label": "睡觉",
+					"file": "motions/Sleeping.motion3.json",
+					"message": "困了就一起休息吧~"
+				}
+			}
+		},
+		{
+			"id": "shizuku",
+			"name": "少女·静香",
+			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/shizuku/shizuku.model.json",
+			"avatar": "/pets/avatars/shizuku.svg",
+			"quotes": [
+				"偷偷看我这么久,要负责哦~",
+				"今天也要元气满满!",
+				"戳到我啦,坏蛋~"
+			],
+			"actions": {
+				"cute": {
+					"label": "卖萌",
+					"file": "motions/tapBody_00.mtn",
+					"message": "戳到我啦,坏蛋~"
+				},
+				"tease": {
+					"label": "撒娇",
+					"file": "motions/pinchIn_00.mtn",
+					"message": "不许欺负我哦~"
+				},
+				"dance": {
+					"label": "开心",
+					"file": "motions/shake_00.mtn",
+					"message": "摇一摇,烦恼全跑掉~"
+				}
+			}
+		}
+	]
+}
