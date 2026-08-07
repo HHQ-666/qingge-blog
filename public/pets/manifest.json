@@ -1,24 +1,10 @@
 {
 	"pets": [
 		{
-			"id": "tororo",
-			"name": "白猫·豆豆",
-			"scale": 0.06,
-			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json",
-			"avatar": "/pets/avatars/tororo.svg"
-		},
-		{
-			"id": "hijiki",
-			"name": "黑猫·煤球",
-			"scale": 0.06,
-			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json",
-			"avatar": "/pets/avatars/hijiki.svg"
-		},
-		{
 			"id": "pio",
 			"name": "少女·Pio",
 			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Pio/model.json",
-			"avatar": "/pets/avatars/pio.svg",
+			"avatar": "/pets/avatars/pio.webp",
 			"quotes": [
 				"再看我就要害羞啦~",
 				"今天也要一起加油哦!",
@@ -44,6 +30,34 @@
 					"label": "睡觉",
 					"file": "motions/Sleeping.mtn",
 					"message": "晚安啦,做个好梦~"
+				}
+			}
+		},
+		{
+			"id": "shizuku",
+			"name": "少女·静香",
+			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/shizuku/shizuku.model.json",
+			"avatar": "/pets/avatars/shizuku.webp",
+			"quotes": [
+				"偷偷看我这么久,要负责哦~",
+				"今天也要元气满满!",
+				"戳到我啦,坏蛋~"
+			],
+			"actions": {
+				"cute": {
+					"label": "卖萌",
+					"file": "motions/tapBody_00.mtn",
+					"message": "戳到我啦,坏蛋~"
+				},
+				"tease": {
+					"label": "撒娇",
+					"file": "motions/pinchIn_00.mtn",
+					"message": "不许欺负我哦~"
+				},
+				"dance": {
+					"label": "开心",
+					"file": "motions/shake_00.mtn",
+					"message": "摇一摇,烦恼全跑掉~"
 				}
 			}
 		},
@@ -76,32 +90,18 @@
 			}
 		},
 		{
-			"id": "shizuku",
-			"name": "少女·静香",
-			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/shizuku/shizuku.model.json",
-			"avatar": "/pets/avatars/shizuku.svg",
-			"quotes": [
-				"偷偷看我这么久,要负责哦~",
-				"今天也要元气满满!",
-				"戳到我啦,坏蛋~"
-			],
-			"actions": {
-				"cute": {
-					"label": "卖萌",
-					"file": "motions/tapBody_00.mtn",
-					"message": "戳到我啦,坏蛋~"
-				},
-				"tease": {
-					"label": "撒娇",
-					"file": "motions/pinchIn_00.mtn",
-					"message": "不许欺负我哦~"
-				},
-				"dance": {
-					"label": "开心",
-					"file": "motions/shake_00.mtn",
-					"message": "摇一摇,烦恼全跑掉~"
-				}
-			}
+			"id": "tororo",
+			"name": "白猫·豆豆",
+			"scale": 1,
+			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json",
+			"avatar": "/pets/avatars/tororo.svg"
+		},
+		{
+			"id": "hijiki",
+			"name": "黑猫·煤球",
+			"scale": 1,
+			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json",
+			"avatar": "/pets/avatars/hijiki.svg"
 		}
 	]
 }

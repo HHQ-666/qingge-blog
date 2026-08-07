@@ -1,5 +1,7 @@
 # Live2D Pet Migration Implementation Plan
 
+> **Implementation status (2026-08-07):** 已完成依赖迁移、右键/长按统一菜单、动作映射、真实模型缩略图和浏览器验收。`l2d-widget` 的浏览器专用动态导入、模型切换后的事件重绑和猫咪缩放修正已按实际运行时行为落地。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 将博客宠物从旧版 `oh-my-live2d` 迁移到 `l2d-widget`，保留右键统一菜单，并接入真实模型缩略图、动作和表情。
@@ -259,7 +261,6 @@ git commit -m "feat(pet): map model motions to pet interactions"
 
 ```svelte
 <script>
-	import { createWidget } from "l2d-widget";
 	import { onDestroy, onMount } from "svelte";
 	import {
 		getAvailableActionEntries,
@@ -281,6 +282,12 @@ git commit -m "feat(pet): map model motions to pet interactions"
 	let cleanupCanvasEvents = () => {};
 	let mounted = true;
 </script>
+```
+
+Because `l2d-widget@0.1.1` touches `document` at module evaluation time, import it dynamically inside `onMount` instead of using a top-level import:
+
+```js
+const { createWidget } = await import("l2d-widget");
 ```
 
 Use `onDestroy` to set `mounted = false`, clear timers, call `cleanupCanvasEvents()`, remove window listeners, and await `widget?.destroy()`.
@@ -520,7 +527,7 @@ git commit -m "refactor(pet): adapt companion to l2d-widget API"
 
 - [ ] **Step 2: 用非圆形竖向卡片展示模型缩略图**
 
-更新 CSS：缩略图使用 `width: 42px; height: 56px; object-fit: contain; border-radius: 10px`，卡片采用 `grid-template-columns: repeat(3, minmax(0, 1fr))`，不再把少女图裁成圆头像。活动态同时显示主题边框和勾选标记。
+更新 CSS：缩略图使用 `width: 68px; height: 82px; object-fit: contain; border-radius: 13px`，卡片采用两列竖向布局，不再把少女图裁成圆头像。活动态同时显示主题边框和勾选标记。
 
 - [ ] **Step 3: 添加气泡 DOM 和 reduced-motion 规则**
 
@@ -568,7 +575,7 @@ git commit -m "feat(pet): add right-click action menu and speech bubble"
 
 - [ ] **Step 1: 从实际 Live2D 模型生成预览帧**
 
-在开发页面加载 Pio 和静香模型，分别截取透明背景、完整上半身/全身可辨识的静止帧，裁剪为约 `240x320` 的竖向图。不要用 AI 重新绘制角色，也不要截取与实际模型不一致的头像。
+在临时干净预览页加载 Pio 和静香模型，分别截取真实运行时帧，抠除预览背景并裁剪为 `240x320` 的 WebP 竖向图。不要用 AI 重新绘制角色，也不要截取与实际模型不一致的头像。
 
 预览帧需要满足：背景透明、角色主体完整、头发和服装轮廓不被裁切、缩小到菜单尺寸后仍能区分两个角色。
 

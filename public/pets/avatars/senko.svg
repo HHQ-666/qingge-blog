@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 橙色狐狸耳 -->
+  <path d="M19 21 L10 4 L29 13 Z" fill="#F08C28"/>
+  <path d="M45 21 L54 4 L35 13 Z" fill="#F08C28"/>
+  <path d="M19 17 L14 8 L24 13 Z" fill="#FCE8D8"/>
+  <path d="M45 17 L50 8 L40 13 Z" fill="#FCE8D8"/>
+  <!-- 奶油色长发 -->
+  <path d="M14 34 Q12 12 32 12 Q52 12 50 34 L51 57 Q48 54 46 58 Q44 54 42 58 L22 58 Q20 54 18 58 Q16 54 13 57 Z" fill="#F2E6CE"/>
+  <!-- 脸 -->
+  <circle cx="32" cy="38" r="16" fill="#FCE8D8"/>
+  <!-- 刘海 -->
+  <path d="M17 34 Q17 17 32 16 Q47 17 47 34 Q44 26 40 31 Q37 24 32 29 Q27 24 24 31 Q20 26 17 34 Z" fill="#F8F2E4"/>
+  <!-- 金琥珀眼睛 -->
+  <circle cx="26" cy="39" r="2.6" fill="#E8A020"/>
+  <circle cx="38" cy="39" r="2.6" fill="#E8A020"/>
+  <path d="M29 45 Q32 47 35 45" stroke="#C86A5A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <circle cx="21" cy="43" r="3" fill="#FBC8C0"/>
+  <circle cx="43" cy="43" r="3" fill="#FBC8C0"/>
+  <!-- 白底橙边衣裳 -->
+  <path d="M20 52 Q32 59 44 52 L44 57 Q32 63 20 57 Z" fill="#FFFFFF"/>
+  <path d="M20 55 Q32 61 44 55 L44 57 Q32 63 20 57 Z" fill="#F08C28"/>
+</svg>

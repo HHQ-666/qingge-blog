@@ -13,6 +13,7 @@
 	let ready = false;
 	let menuOpen = false;
 	let currentIdx = 0;
+	let pendingInitialIdx = 0;
 	let actionEntries = [];
 	let bubble = "";
 	let bubbleTimer;
@@ -60,6 +61,9 @@
 	}
 
 	function bindCanvasEvents(target) {
+		const onPointerDown = (event) => {
+			if (event.button === 2) event.stopPropagation();
+		};
 		const onContextMenu = (event) => {
 			event.preventDefault();
 			event.stopPropagation();
@@ -73,12 +77,14 @@
 		};
 		const cancelLongPress = () => clearTimeout(pressTimer);
 
+		target.addEventListener("pointerdown", onPointerDown, true);
 		target.addEventListener("contextmenu", onContextMenu);
 		target.addEventListener("touchstart", onTouchStart, { passive: true });
 		target.addEventListener("touchend", cancelLongPress);
 		target.addEventListener("touchmove", cancelLongPress);
 
 		return () => {
+			target.removeEventListener("pointerdown", onPointerDown, true);
 			target.removeEventListener("contextmenu", onContextMenu);
 			target.removeEventListener("touchstart", onTouchStart);
 			target.removeEventListener("touchend", cancelLongPress);
@@ -100,9 +106,28 @@
 
 	function handleModelLoaded() {
 		if (!mounted || !widget || !pets[currentIdx]) return;
+		if (pendingInitialIdx > 0) {
+			const targetIdx = pendingInitialIdx;
+			pendingInitialIdx = 0;
+			void switchTo(targetIdx);
+			return;
+		}
 		ready = true;
 		refreshActionEntries();
 		showBubble(`欢迎来到小屋,${pets[currentIdx].name}来啦~`);
+	}
+
+	function bindL2dEvents() {
+		const l2d = widget?.l2d;
+		if (!l2d) return;
+		l2d.on("loaded", handleModelLoaded);
+		l2d.on("tap", playCuteAction);
+	}
+
+	function syncCanvasEvents() {
+		cleanupCanvasEvents();
+		canvas = widget?.l2d?.getCanvas() ?? null;
+		if (canvas) cleanupCanvasEvents = bindCanvasEvents(canvas);
 	}
 
 	async function switchTo(idx) {
@@ -113,6 +138,12 @@
 		currentIdx = idx;
 		try {
 			await widget.switchModel(idx);
+			bindL2dEvents();
+			syncCanvasEvents();
+			if (Object.keys(widget.l2d.getMotions()).length === 0) {
+				throw new Error("model has no loaded motions");
+			}
+			handleModelLoaded();
 			refreshActionEntries();
 		} catch (error) {
 			currentIdx = previousIdx;
@@ -188,7 +219,8 @@
 				if (!mounted) return;
 
 				const defaultIndex = pets.findIndex((pet) => pet.id === petConfig?.defaultPet);
-				currentIdx = defaultIndex >= 0 ? defaultIndex : 0;
+				pendingInitialIdx = defaultIndex > 0 ? defaultIndex : 0;
+				currentIdx = 0;
 
 				widget = createWidget({
 					position: "bottom-left",
@@ -212,10 +244,8 @@
 					})),
 				});
 
-				widget.l2d.on("loaded", handleModelLoaded);
-				widget.l2d.on("tap", playCuteAction);
-				canvas = widget.l2d.getCanvas();
-				cleanupCanvasEvents = bindCanvasEvents(canvas);
+				bindL2dEvents();
+				syncCanvasEvents();
 			} catch (error) {
 				console.warn("[pet] l2d-widget 初始化失败,功能已静默关闭", error);
 			}
@@ -317,7 +347,7 @@
 	.pet-menu {
 		position: fixed;
 		z-index: 10000;
-		width: min(268px, calc(100vw - 16px));
+		width: min(320px, calc(100vw - 16px));
 		max-height: min(620px, calc(100vh - 16px));
 		overflow-y: auto;
 		padding: 10px;
@@ -343,18 +373,19 @@
 	}
 	.pet-pet-grid {
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 6px;
 	}
 	.pet-item {
 		position: relative;
 		display: flex;
 		min-width: 0;
-		min-height: 86px;
+		min-height: 116px;
 		align-items: center;
 		justify-content: center;
+		flex-direction: column;
 		gap: 3px;
-		padding: 5px 3px 4px;
+		padding: 7px 5px 5px;
 		border: 1px solid transparent;
 		border-radius: 11px;
 		background: rgba(255, 255, 255, 0.56);
@@ -375,10 +406,10 @@
 	}
 	.pet-item-img,
 	.pet-item-placeholder {
-		width: 42px;
-		height: 56px;
+		width: 68px;
+		height: 82px;
 		flex-shrink: 0;
-		border-radius: 10px;
+		border-radius: 13px;
 		background: rgba(242, 238, 232, 0.72);
 		object-fit: contain;
 	}
