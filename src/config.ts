@@ -305,7 +305,7 @@ export const funConfig = {
 		],
 	},
 	/**
-	 * 小屋宠物（oh-my-live2d 看板娘）
+	 * 小屋宠物（Live2D 看板娘）
 	 * - 右键宠物（移动端长按）弹出功能菜单：切换形象/聊天/随机/隐藏
 	 * - 对话气泡、点击互动；模型库：public/pets/manifest.json（零代码增删形象）
 	 */
