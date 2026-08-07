@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from "svelte";
 	import {
 		getAvailableActionEntries,
-		pickRandomMotion,
+		getPrimaryActionEntry,
 	} from "../../scripts/pet-actions.mjs";
 
 	export let petConfig;
@@ -15,6 +15,9 @@
 	let currentIdx = 0;
 	let pendingInitialIdx = 0;
 	let actionEntries = [];
+	let primaryAction = null;
+	let loadStatus = "正在准备";
+	let nativeStatusBar = null;
 	let bubble = "";
 	let bubbleTimer;
 	let pressTimer;
@@ -24,11 +27,10 @@
 	let cleanupCanvasEvents = () => {};
 	let mounted = true;
 
-	const BUBBLE_FALLBACK = [
-		"啾——你戳到我啦!",
-		"今天也要元气满满哦~",
-		"休息一下,再继续写代码吧~",
-	];
+	function setNativeStatusLoading(isLoading) {
+		if (!nativeStatusBar) return;
+		nativeStatusBar.classList.toggle("pet-native-status-loading", isLoading);
+	}
 
 	function showBubble(message) {
 		clearTimeout(bubbleTimer);
@@ -39,8 +41,8 @@
 	}
 
 	function openMenuAt(x, y) {
-		menuX = Math.max(8, Math.min(x, window.innerWidth - 208));
-		menuY = Math.max(8, Math.min(y + 8, window.innerHeight - 220));
+		menuX = Math.max(8, Math.min(x, window.innerWidth - 256));
+		menuY = Math.max(8, Math.min(y + 8, window.innerHeight - 180));
 		menuOpen = true;
 		requestAnimationFrame(() => {
 			if (!menuEl) return;
@@ -52,7 +54,7 @@
 
 	function onWindowPointerDown(event) {
 		if (!menuOpen || event.button === 2) return;
-		if (menuEl && menuEl.contains(event.target)) return;
+		if (menuEl?.contains(event.target)) return;
 		menuOpen = false;
 	}
 
@@ -96,12 +98,12 @@
 	function refreshActionEntries() {
 		if (!widget || !pets[currentIdx]) {
 			actionEntries = [];
+			primaryAction = null;
 			return;
 		}
-		actionEntries = getAvailableActionEntries(
-			pets[currentIdx],
-			widget.l2d.getMotions(),
-		);
+		const availableMotions = widget.l2d.getMotions();
+		actionEntries = getAvailableActionEntries(pets[currentIdx], availableMotions);
+		primaryAction = getPrimaryActionEntry(pets[currentIdx], availableMotions);
 	}
 
 	function handleModelLoaded() {
@@ -113,6 +115,8 @@
 			return;
 		}
 		ready = true;
+		loadStatus = "";
+		setNativeStatusLoading(false);
 		refreshActionEntries();
 		showBubble(`欢迎来到小屋,${pets[currentIdx].name}来啦~`);
 	}
@@ -134,6 +138,8 @@
 		if (!widget || idx === currentIdx || !pets[idx]) return;
 		menuOpen = false;
 		ready = false;
+		loadStatus = "切换中";
+		setNativeStatusLoading(true);
 		const previousIdx = currentIdx;
 		currentIdx = idx;
 		try {
@@ -148,6 +154,8 @@
 		} catch (error) {
 			currentIdx = previousIdx;
 			ready = true;
+			loadStatus = "";
+			setNativeStatusLoading(false);
 			refreshActionEntries();
 			showBubble("这个形象暂时加载失败,先陪我一会儿吧~");
 			console.warn("[pet] model switch failed", error);
@@ -166,27 +174,6 @@
 	function playCuteAction() {
 		const action = actionEntries.find((item) => item.id === "cute") ?? actionEntries[0];
 		if (action) playAction(action);
-	}
-
-	function playRandomAction() {
-		if (!widget || !ready) return;
-		const motion = pickRandomMotion(widget.l2d.getMotions());
-		if (!motion) {
-			showBubble("这个形象还没有配置额外动作哦~");
-			menuOpen = false;
-			return;
-		}
-		widget.l2d.playMotion(motion.group, motion.index, 2);
-		showBubble("随机卖个萌给你看~");
-		menuOpen = false;
-	}
-
-	function sayRandom() {
-		const messages = pets[currentIdx]?.quotes?.length
-			? pets[currentIdx].quotes
-			: BUBBLE_FALLBACK;
-		showBubble(messages[Math.floor(Math.random() * messages.length)]);
-		menuOpen = false;
 	}
 
 	function hidePet() {
@@ -210,6 +197,7 @@
 				if (pets.length === 0) throw new Error("manifest pets has no valid models");
 			} catch (error) {
 				console.warn("[pet] manifest 加载失败,功能已静默关闭", error);
+				loadStatus = "";
 				return;
 			}
 
@@ -246,8 +234,14 @@
 
 				bindL2dEvents();
 				syncCanvasEvents();
+				nativeStatusBar = [...document.body.children].find(
+					(element) => element.style.zIndex === "9998",
+				) ?? null;
+				setNativeStatusLoading(true);
 			} catch (error) {
 				console.warn("[pet] l2d-widget 初始化失败,功能已静默关闭", error);
+				loadStatus = "";
+				setNativeStatusLoading(false);
 			}
 		})();
 	});
@@ -264,6 +258,13 @@
 	});
 </script>
 
+{#if loadStatus}
+	<div class="pet-load-status" aria-live="polite">
+		<span class="pet-load-spinner" aria-hidden="true"></span>
+		{loadStatus}
+	</div>
+{/if}
+
 {#if bubble}
 	<div class="pet-bubble" aria-live="polite">{bubble}</div>
 {/if}
@@ -276,9 +277,19 @@
 		role="menu"
 		aria-label="宠物功能菜单"
 	>
-		<div class="pet-menu-title">{pets[currentIdx]?.name ?? "伙伴"}</div>
-		<div class="pet-menu-label">切换形象</div>
-		<div class="pet-pet-grid">
+		<div class="pet-menu-head">
+			<div class="pet-menu-title">{pets[currentIdx]?.name ?? "伙伴"}</div>
+			<button
+				type="button"
+				class="pet-hide-button"
+				role="menuitem"
+				on:click={hidePet}
+				aria-label="隐藏宠物"
+			>
+				×
+			</button>
+		</div>
+		<div class="pet-pet-strip" aria-label="切换形象">
 			{#each pets as pet, i (pet.id)}
 				<button
 					type="button"
@@ -294,27 +305,55 @@
 					{:else}
 						<span class="pet-item-placeholder">🐾</span>
 					{/if}
-					<span class="pet-item-name">{pet.name}</span>
-					{#if currentIdx === i}<span class="pet-check">✓</span>{/if}
+					<span class="pet-item-name">{pet.name.replace(/^[^·]+·/, "")}</span>
+					{#if currentIdx === i}<span class="pet-check" aria-hidden="true">✓</span>{/if}
 				</button>
 			{/each}
 		</div>
-		<div class="pet-menu-divider"></div>
-		<div class="pet-menu-label">互动</div>
-		<div class="pet-menu-actions">
-			<button type="button" role="menuitem" on:click={sayRandom}>💬 聊天</button>
-			{#each actionEntries as action (action.id)}
-				<button type="button" role="menuitem" on:click={() => playAction(action)}>
-					✨ {action.label}
-				</button>
-			{/each}
-			<button type="button" role="menuitem" on:click={playRandomAction}>🎲 随机动作</button>
-			<button type="button" role="menuitem" on:click={hidePet}>🙈 隐藏</button>
-		</div>
+		{#if primaryAction}
+			<button
+				type="button"
+				class="pet-primary-action"
+				role="menuitem"
+				on:click={() => playAction(primaryAction)}
+			>
+				✨ {primaryAction.label}
+			</button>
+		{/if}
 	</div>
 {/if}
 
 <style>
+	.pet-load-status {
+		position: fixed;
+		left: 62px;
+		bottom: 286px;
+		z-index: 10002;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 5px 9px;
+		border: 1px solid rgba(255, 255, 255, 0.72);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.94);
+		box-shadow: 0 8px 20px rgba(31, 38, 47, 0.14);
+		color: #666;
+		font-size: 0.68rem;
+		line-height: 1;
+		pointer-events: none;
+		animation: pet-status-in 0.2s ease-out both;
+	}
+	.pet-load-spinner {
+		width: 9px;
+		height: 9px;
+		border: 1.5px solid rgba(232, 163, 92, 0.28);
+		border-top-color: var(--primary);
+		border-radius: 50%;
+		animation: pet-spin 0.75s linear infinite;
+	}
+	:global(.pet-native-status-loading) {
+		display: none !important;
+	}
 	.pet-bubble {
 		position: fixed;
 		left: 58px;
@@ -347,12 +386,10 @@
 	.pet-menu {
 		position: fixed;
 		z-index: 10000;
-		width: min(320px, calc(100vw - 16px));
-		max-height: min(620px, calc(100vh - 16px));
-		overflow-y: auto;
-		padding: 10px;
+		width: min(248px, calc(100vw - 16px));
+		padding: 8px;
 		border: 1px solid rgba(255, 255, 255, 0.65);
-		border-radius: 16px;
+		border-radius: 14px;
 		background: rgba(255, 255, 255, 0.92);
 		backdrop-filter: blur(18px);
 		-webkit-backdrop-filter: blur(18px);
@@ -360,37 +397,61 @@
 		color: #555;
 		animation: pet-menu-in 0.18s ease-out both;
 	}
+	.pet-menu-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 0 2px 6px 4px;
+	}
 	.pet-menu-title {
-		padding: 0 4px 4px;
 		color: #333;
-		font-size: 0.82rem;
+		font-size: 0.76rem;
 		font-weight: 700;
 	}
-	.pet-menu-label {
-		padding: 3px 4px;
+	.pet-hide-button {
+		width: 22px;
+		height: 22px;
+		border: 0;
+		border-radius: 7px;
+		background: transparent;
 		color: #999;
-		font-size: 0.64rem;
+		font-size: 1rem;
+		line-height: 1;
+		cursor: pointer;
+		transition: background 0.15s ease, color 0.15s ease;
 	}
-	.pet-pet-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 6px;
+	.pet-hide-button:hover,
+	.pet-hide-button:focus-visible {
+		background: rgba(0, 0, 0, 0.06);
+		color: #555;
+	}
+	.pet-pet-strip {
+		display: flex;
+		gap: 4px;
+		overflow-x: auto;
+		padding: 1px 1px 3px;
+		scrollbar-width: none;
+	}
+	.pet-pet-strip::-webkit-scrollbar {
+		display: none;
 	}
 	.pet-item {
 		position: relative;
 		display: flex;
-		min-width: 0;
-		min-height: 116px;
+		width: 42px;
+		min-width: 42px;
+		min-height: 64px;
 		align-items: center;
 		justify-content: center;
 		flex-direction: column;
-		gap: 3px;
-		padding: 7px 5px 5px;
+		gap: 2px;
+		padding: 4px 2px;
 		border: 1px solid transparent;
-		border-radius: 11px;
+		border-radius: 9px;
 		background: rgba(255, 255, 255, 0.56);
 		color: #666;
-		font-size: 0.64rem;
+		font-size: 0.56rem;
 		cursor: pointer;
 		transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 	}
@@ -406,10 +467,10 @@
 	}
 	.pet-item-img,
 	.pet-item-placeholder {
-		width: 68px;
-		height: 82px;
+		width: 38px;
+		height: 44px;
 		flex-shrink: 0;
-		border-radius: 13px;
+		border-radius: 9px;
 		background: rgba(242, 238, 232, 0.72);
 		object-fit: contain;
 	}
@@ -419,40 +480,34 @@
 		font-size: 1rem;
 	}
 	.pet-item-name {
-		max-width: 100%;
+		max-width: 40px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 	.pet-check {
 		position: absolute;
-		top: 3px;
-		right: 5px;
+		top: 1px;
+		right: 2px;
 		color: var(--primary);
+		font-size: 0.62rem;
 		font-weight: 700;
 	}
-	.pet-menu-divider {
-		height: 1px;
-		margin: 7px 2px 4px;
-		background: rgba(0, 0, 0, 0.07);
-	}
-	.pet-menu-actions {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 5px;
-	}
-	.pet-menu-actions button {
-		min-height: 30px;
-		padding: 5px 6px;
+	.pet-primary-action {
+		width: 100%;
+		min-height: 27px;
+		margin-top: 6px;
+		padding: 4px 6px;
 		border: 1px solid rgba(0, 0, 0, 0.05);
-		border-radius: 9px;
+		border-radius: 8px;
 		background: rgba(255, 255, 255, 0.62);
 		color: #555;
-		font-size: 0.68rem;
+		font-size: 0.64rem;
 		cursor: pointer;
 		transition: background 0.15s ease, transform 0.15s ease;
 	}
-	.pet-menu-actions button:hover {
+	.pet-primary-action:hover,
+	.pet-primary-action:focus-visible {
 		background: rgba(255, 255, 255, 0.96);
 		transform: translateY(-1px);
 	}
@@ -468,20 +523,21 @@
 	:root.dark .pet-menu-title {
 		color: #f0f0f0;
 	}
+	:root.dark .pet-load-status,
 	:root.dark .pet-item,
-	:root.dark .pet-menu-actions button {
+	:root.dark .pet-hide-button,
+	:root.dark .pet-primary-action {
 		border-color: rgba(255, 255, 255, 0.08);
 		background: rgba(255, 255, 255, 0.08);
 		color: #ccc;
 	}
 	:root.dark .pet-item.is-active,
 	:root.dark .pet-item:hover,
-	:root.dark .pet-menu-actions button:hover {
+	:root.dark .pet-hide-button:hover,
+	:root.dark .pet-primary-action:hover,
+	:root.dark .pet-primary-action:focus-visible {
 		background: rgba(255, 255, 255, 0.16);
 		color: #fff;
-	}
-	:root.dark .pet-menu-divider {
-		background: rgba(255, 255, 255, 0.1);
 	}
 	@keyframes pet-bubble-in {
 		from {
@@ -503,10 +559,29 @@
 			transform: translateY(0) scale(1);
 		}
 	}
+	@keyframes pet-status-in {
+		from {
+			opacity: 0;
+			transform: translateY(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+	@keyframes pet-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 	@media (max-width: 520px) {
 		.pet-bubble {
 			left: 50px;
 			bottom: 258px;
+		}
+		.pet-load-status {
+			left: 52px;
+			bottom: 246px;
 		}
 		.pet-menu {
 			width: min(250px, calc(100vw - 16px));
@@ -514,9 +589,11 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.pet-bubble,
+		.pet-load-status,
 		.pet-menu,
 		.pet-item,
-		.pet-menu-actions button {
+		.pet-primary-action,
+		.pet-load-spinner {
 			animation: none !important;
 			transition-duration: 0.01ms !important;
 		}

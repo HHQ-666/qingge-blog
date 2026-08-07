@@ -65,7 +65,7 @@
 			"id": "senko",
 			"name": "狐娘·仙狐",
 			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Senko_Normals/senko.model3.json",
-			"avatar": "/pets/avatars/senko.svg",
+			"avatar": "/pets/avatars/senko.webp",
 			"quotes": [
 				"来,让姐姐给你加加油~",
 				"摸摸头,今天也辛苦了。",
@@ -94,14 +94,14 @@
 			"name": "白猫·豆豆",
 			"scale": 1,
 			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json",
-			"avatar": "/pets/avatars/tororo.svg"
+			"avatar": "/pets/avatars/tororo.webp"
 		},
 		{
 			"id": "hijiki",
 			"name": "黑猫·煤球",
 			"scale": 1,
 			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json",
-			"avatar": "/pets/avatars/hijiki.svg"
+			"avatar": "/pets/avatars/hijiki.webp"
 		}
 	]
 }
