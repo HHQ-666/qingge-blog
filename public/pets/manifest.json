@@ -65,25 +65,25 @@
 		},
 		{
 			"id": "wanko",
-			"name": "萌宠·旺仔",
+			"name": "萌宠·麻薯仔",
 			"scale": 0.82,
 			"model": "/pets/models/wanko/wanko.model.json",
 			"avatar": "/pets/avatars/wanko.webp",
 			"quotes": [
-				"汪！今天也要开心呀~",
-				"陪你坐一会儿，好不好？",
-				"摇摇尾巴，把烦恼赶走！"
+				"麻薯仔软乎乎地来啦~",
+				"今天也要像麻薯一样元气Q弹！",
+				"把烦恼揉成小小一团吧！"
 			],
 			"actions": {
 				"cute": {
-					"label": "卖萌",
+					"label": "贴贴",
 					"file": "mtn/touch_01.mtn",
-					"message": "给你一个软乎乎的贴贴~"
+					"message": "给你一个软乎乎的麻薯贴贴~"
 				},
 				"dance": {
-					"label": "摇尾巴",
+					"label": "晃一晃",
 					"file": "mtn/shake_01.mtn",
-					"message": "旺仔开心地摇起尾巴啦！"
+					"message": "麻薯仔开心地晃起来啦！"
 				}
 			}
 		},

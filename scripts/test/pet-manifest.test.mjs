@@ -8,6 +8,10 @@ import sharp from "sharp";
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const manifestPath = resolve(repoRoot, "public/pets/manifest.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+const footerSource = await readFile(
+	resolve(repoRoot, "src/components/Footer.astro"),
+	"utf8",
+);
 const expectedIds = ["pio", "shizuku", "wanko", "nito", "koharu", "haru"];
 const localIds = ["wanko", "nito", "koharu", "haru"];
 
@@ -26,6 +30,17 @@ test("pet manifest contains the approved six models in order", () => {
 			false,
 		);
 	}
+
+	const wanko = manifest.pets.find((pet) => pet.id === "wanko");
+	assert.match(wanko.name, /麻薯/);
+	assert.match(JSON.stringify([wanko.quotes, wanko.actions]), /麻薯/);
+});
+
+test("site exposes the required Live2D sample-data attribution", () => {
+	assert.match(footerSource, /Live2D Inc\./);
+	assert.match(footerSource, /依照其条款使用/);
+	assert.match(footerSource, /由作者自行创作并独立负责/);
+	assert.match(footerSource, /live2d\.com\/en\/learn\/sample\/model-terms/);
 });
 
 test("new pets use complete local model resource graphs", async () => {
