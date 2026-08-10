@@ -205,9 +205,9 @@ export const funConfig = {
 	splash: {
 		enable: true,
 		/** 展示时长（毫秒），之后淡出进入主页 */
-		durationMs: 3200,
+		durationMs: 3000,
 		/** 淡出动画时长 */
-		fadeMs: 900,
+		fadeMs: 800,
 		/** 是否每个浏览器会话只播一次 */
 		oncePerSession: true,
 		image: "assets/images/splash-ocean-sunset.jpg",

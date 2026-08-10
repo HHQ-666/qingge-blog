@@ -1,7 +1,7 @@
 ---
 import { Image } from "astro:assets";
-import { funConfig, siteConfig } from "../config";
 import splashImg from "../assets/images/splash-ocean-sunset.jpg";
+import { funConfig, siteConfig } from "../config";
 
 const { splash } = funConfig;
 const enabled = splash.enable;
@@ -18,6 +18,7 @@ const enabled = splash.enable;
 			data-duration={splash.durationMs}
 			data-fade={splash.fadeMs}
 			data-once={splash.oncePerSession ? "1" : "0"}
+			style={`--splash-fade: ${splash.fadeMs}ms`}
 		>
 			<div class="site-splash__bg">
 				<Image
@@ -59,8 +60,8 @@ const enabled = splash.enable;
 					return;
 				}
 				document.documentElement.classList.add("splash-active");
-				const duration = Number(el.getAttribute("data-duration") || 2800);
-				const fade = Number(el.getAttribute("data-fade") || 900);
+				const duration = Number(el.getAttribute("data-duration") || 3000);
+				const fade = Number(el.getAttribute("data-fade") || 800);
 				let closed = false;
 				function closeSplash() {
 					if (closed) return;
@@ -105,10 +106,11 @@ const enabled = splash.enable;
 		align-items: center;
 		justify-content: center;
 		color: #fff;
-		animation: splash-in 700ms ease both;
+		background: #0c0804;
+		opacity: 1;
 	}
 	.site-splash.is-leaving {
-		animation: splash-out var(--splash-fade, 900ms) ease forwards;
+		animation: splash-out var(--splash-fade, 800ms) ease forwards;
 		pointer-events: none;
 	}
 	.site-splash__bg {
@@ -185,14 +187,6 @@ const enabled = splash.enable;
 		transform: scale(0.97);
 	}
 
-	@keyframes splash-in {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
 	@keyframes splash-out {
 		to {
 			opacity: 0;
