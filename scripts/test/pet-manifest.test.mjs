@@ -3,6 +3,7 @@ import { access, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const manifestPath = resolve(repoRoot, "public/pets/manifest.json");
@@ -35,6 +36,10 @@ test("new pets use complete local model resource graphs", async () => {
 
 		const modelFile = publicFile(pet.model);
 		const model = JSON.parse(await readFile(modelFile, "utf8"));
+		assert.ok(
+			Number.isFinite(model.layout?.width) && model.layout.width > 0,
+			`${id} must declare a visible canvas layout`,
+		);
 		const motionFiles = Object.values(model.motions ?? {})
 			.flat()
 			.map((motion) => motion.file);
@@ -59,5 +64,19 @@ test("new pets use complete local model resource graphs", async () => {
 				`${id} action is not declared by its model: ${action.file}`,
 			);
 		}
+	}
+});
+
+test("new pet avatars are square WebP images and removed avatars are gone", async () => {
+	for (const id of localIds) {
+		const avatarFile = publicFile(`/pets/avatars/${id}.webp`);
+		const metadata = await sharp(avatarFile).metadata();
+		assert.equal(metadata.format, "webp", `${id} avatar must be WebP`);
+		assert.equal(metadata.width, 160, `${id} avatar width must be 160px`);
+		assert.equal(metadata.height, 160, `${id} avatar height must be 160px`);
+	}
+
+	for (const id of ["senko", "tororo", "hijiki"]) {
+		await assert.rejects(access(publicFile(`/pets/avatars/${id}.webp`)));
 	}
 });
