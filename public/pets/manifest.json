@@ -141,26 +141,26 @@
 			}
 		},
 		{
-			"id": "miku",
-			"name": "少女·Miku",
-			"scale": 0.7,
-			"model": "/pets/models/miku/miku.model.json",
-			"avatar": "/pets/avatars/miku.webp",
+			"id": "haru",
+			"name": "少女·Haru",
+			"scale": 0.88,
+			"model": "/pets/models/haru/haru01.model.json",
+			"avatar": "/pets/avatars/haru.webp",
 			"quotes": [
-				"想听一段轻快的旋律吗？",
-				"让今天也闪闪发光吧~",
-				"写累了就跟着节拍放松一下！"
+				"春日的好心情分你一半~",
+				"今天也一起轻松前进吧！",
+				"写累了就伸个懒腰吧。"
 			],
 			"actions": {
 				"cute": {
 					"label": "互动",
-					"file": "mtn/miku_m_01.mtn",
+					"file": "mtn/tapBody_00.mtn",
 					"message": "收到你的招呼啦~"
 				},
 				"dance": {
 					"label": "摇摆",
-					"file": "mtn/miku_shake_01.mtn",
-					"message": "跟着旋律一起摇摆吧！"
+					"file": "mtn/shake_00.mtn",
+					"message": "跟着春风一起摇摆吧！"
 				}
 			}
 		}

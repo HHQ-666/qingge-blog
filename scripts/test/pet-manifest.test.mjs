@@ -8,8 +8,8 @@ import sharp from "sharp";
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const manifestPath = resolve(repoRoot, "public/pets/manifest.json");
 const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
-const expectedIds = ["pio", "shizuku", "wanko", "nito", "koharu", "miku"];
-const localIds = ["wanko", "nito", "koharu", "miku"];
+const expectedIds = ["pio", "shizuku", "wanko", "nito", "koharu", "haru"];
+const localIds = ["wanko", "nito", "koharu", "haru"];
 
 function publicFile(publicUrl) {
 	return resolve(repoRoot, "public", publicUrl.replace(/^\//, ""));
@@ -20,7 +20,7 @@ test("pet manifest contains the approved six models in order", () => {
 		manifest.pets.map((pet) => pet.id),
 		expectedIds,
 	);
-	for (const removedId of ["senko", "tororo", "hijiki"]) {
+	for (const removedId of ["senko", "tororo", "hijiki", "miku"]) {
 		assert.equal(
 			manifest.pets.some((pet) => pet.id === removedId),
 			false,
@@ -40,15 +40,16 @@ test("new pets use complete local model resource graphs", async () => {
 			Number.isFinite(model.layout?.width) && model.layout.width > 0,
 			`${id} must declare a visible canvas layout`,
 		);
-		const motionFiles = Object.values(model.motions ?? {})
-			.flat()
-			.map((motion) => motion.file);
+		const motions = Object.values(model.motions ?? {}).flat();
+		const motionFiles = motions.map((motion) => motion.file);
 		const references = [
 			model.model,
 			...(model.textures ?? []),
 			model.physics,
+			model.pose,
 			...(model.expressions ?? []).map((expression) => expression.file),
 			...motionFiles,
+			...motions.map((motion) => motion.sound),
 		].filter(Boolean);
 
 		for (const reference of references) {
@@ -76,7 +77,7 @@ test("new pet avatars are square WebP images and removed avatars are gone", asyn
 		assert.equal(metadata.height, 160, `${id} avatar height must be 160px`);
 	}
 
-	for (const id of ["senko", "tororo", "hijiki"]) {
+	for (const id of ["senko", "tororo", "hijiki", "miku"]) {
 		await assert.rejects(access(publicFile(`/pets/avatars/${id}.webp`)));
 	}
 });
