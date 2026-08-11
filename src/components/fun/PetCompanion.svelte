@@ -1,9 +1,6 @@
 <script>
 	import { onDestroy, onMount } from "svelte";
-	import {
-		getAvailableActionEntries,
-		getPrimaryActionEntry,
-	} from "../../scripts/pet-actions.mjs";
+	import { getAvailableActionEntries } from "../../scripts/pet-actions.mjs";
 
 	export let petConfig;
 
@@ -12,24 +9,111 @@
 	let canvas = null;
 	let ready = false;
 	let menuOpen = false;
+	let petHidden = false;
 	let currentIdx = 0;
 	let pendingInitialIdx = 0;
 	let actionEntries = [];
-	let primaryAction = null;
 	let loadStatus = "正在准备";
 	let nativeStatusBar = null;
 	let bubble = "";
+	let staticAction = "";
 	let bubbleTimer;
+	let staticActionTimer;
 	let pressTimer;
 	let menuEl;
 	let menuX = 0;
 	let menuY = 0;
 	let cleanupCanvasEvents = () => {};
+	let loadTimer;
+	let loadError = false;
+	let switchInFlight = false;
+	const MODEL_LOAD_TIMEOUT = 15000;
+	const PET_MENU_WIDTH = 184;
+	const PET_MENU_HEIGHT = 82;
+	const preloadedModels = new Map();
 	let mounted = true;
+
+	function clearLoadTimer() {
+		clearTimeout(loadTimer);
+		loadTimer = undefined;
+	}
+
+	function showLoadError(message = "加载失败 · 点此选择") {
+		clearLoadTimer();
+		loadError = true;
+		ready = false;
+		loadStatus = message;
+		setNativeStatusLoading(false);
+		setCanvasVisible(false);
+	}
+
+	function startLoadWatch(status) {
+		clearLoadTimer();
+		loadError = false;
+		loadStatus = status;
+		setNativeStatusLoading(true);
+		loadTimer = setTimeout(() => {
+			if (!mounted || ready) return;
+			showLoadError("加载超时 · 点此选择");
+		}, MODEL_LOAD_TIMEOUT);
+	}
 
 	function setNativeStatusLoading(isLoading) {
 		if (!nativeStatusBar) return;
 		nativeStatusBar.classList.toggle("pet-native-status-loading", isLoading);
+	}
+
+	function isStaticPet(pet) {
+		return pet?.renderMode === "image";
+	}
+
+	function setCanvasVisible(isVisible) {
+		if (!canvas) return;
+		canvas.style.visibility = isVisible ? "visible" : "hidden";
+		canvas.style.pointerEvents = isVisible ? "auto" : "none";
+	}
+
+	function getPreloadAssetPaths(config, pet) {
+		const fileReferences = config?.FileReferences ?? {};
+		const paths = [
+			fileReferences.Moc,
+			...(fileReferences.Textures ?? []),
+			fileReferences.Physics,
+			fileReferences.Pose,
+			fileReferences.UserData,
+			config?.model,
+			...(pet?.actions ? Object.values(pet.actions).flatMap((action) => [action?.file, action?.expression]) : []),
+		];
+		return [...new Set(paths.filter((path) => typeof path === "string" && path.length > 0))];
+	}
+
+	function preloadModel(pet) {
+		if (!pet?.model || isStaticPet(pet)) return Promise.resolve();
+		const existing = preloadedModels.get(pet.model);
+		if (existing) return existing;
+		const preload = fetch(pet.model, { cache: "force-cache", priority: "low" })
+			.then(async (response) => {
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+				const config = await response.json();
+				await Promise.all(
+					getPreloadAssetPaths(config, pet).map((assetPath) => {
+						try {
+							return fetch(new URL(assetPath, pet.model).href, {
+								cache: "force-cache",
+								priority: "low",
+							}).catch(() => null);
+						} catch {
+							return null;
+						}
+					}),
+				);
+			})
+			.catch((error) => {
+				preloadedModels.delete(pet.model);
+				return null;
+			});
+		preloadedModels.set(pet.model, preload);
+		return preload;
 	}
 
 	function showBubble(message) {
@@ -41,8 +125,8 @@
 	}
 
 	function openMenuAt(x, y) {
-		menuX = Math.max(8, Math.min(x, window.innerWidth - 256));
-		menuY = Math.max(8, Math.min(y + 8, window.innerHeight - 180));
+		menuX = Math.max(8, Math.min(x, window.innerWidth - PET_MENU_WIDTH - 8));
+		menuY = Math.max(8, Math.min(y + 8, window.innerHeight - PET_MENU_HEIGHT - 8));
 		menuOpen = true;
 		requestAnimationFrame(() => {
 			if (!menuEl) return;
@@ -98,16 +182,24 @@
 	function refreshActionEntries() {
 		if (!widget || !pets[currentIdx]) {
 			actionEntries = [];
-			primaryAction = null;
+			return;
+		}
+		if (isStaticPet(pets[currentIdx])) {
+			actionEntries = Object.entries(pets[currentIdx].actions ?? {}).map(([id, action]) => ({
+				id,
+				label: action.label,
+				message: action.message,
+			}));
 			return;
 		}
 		const availableMotions = widget.l2d.getMotions();
 		actionEntries = getAvailableActionEntries(pets[currentIdx], availableMotions);
-		primaryAction = getPrimaryActionEntry(pets[currentIdx], availableMotions);
 	}
 
 	function handleModelLoaded() {
 		if (!mounted || !widget || !pets[currentIdx]) return;
+		clearLoadTimer();
+		loadError = false;
 		if (pendingInitialIdx > 0) {
 			const targetIdx = pendingInitialIdx;
 			pendingInitialIdx = 0;
@@ -115,8 +207,10 @@
 			return;
 		}
 		ready = true;
+		petHidden = false;
 		loadStatus = "";
 		setNativeStatusLoading(false);
+		setCanvasVisible(true);
 		refreshActionEntries();
 		showBubble(`欢迎来到小屋,${pets[currentIdx].name}来啦~`);
 	}
@@ -135,13 +229,30 @@
 	}
 
 	async function switchTo(idx) {
-		if (!widget || idx === currentIdx || !pets[idx]) return;
+		if (!widget || idx === currentIdx || !pets[idx] || switchInFlight) return;
+		switchInFlight = true;
 		menuOpen = false;
 		ready = false;
-		loadStatus = "切换中";
-		setNativeStatusLoading(true);
+		startLoadWatch("切换中");
 		const previousIdx = currentIdx;
 		currentIdx = idx;
+		petHidden = false;
+		staticAction = "";
+		clearTimeout(staticActionTimer);
+		if (isStaticPet(pets[idx])) {
+			clearLoadTimer();
+			loadError = false;
+			setCanvasVisible(false);
+			ready = true;
+			loadStatus = "";
+			setNativeStatusLoading(false);
+			refreshActionEntries();
+			showBubble(`${pets[currentIdx].name}先用轻盈模式陪你~`);
+			switchInFlight = false;
+			return;
+		}
+		setCanvasVisible(false);
+		void preloadModel(pets[idx]);
 		try {
 			await widget.switchModel(idx);
 			bindL2dEvents();
@@ -152,18 +263,41 @@
 			handleModelLoaded();
 			refreshActionEntries();
 		} catch (error) {
-			currentIdx = previousIdx;
-			ready = true;
-			loadStatus = "";
-			setNativeStatusLoading(false);
-			refreshActionEntries();
-			showBubble("这个形象暂时加载失败,先陪我一会儿吧~");
+			clearLoadTimer();
 			console.warn("[pet] model switch failed", error);
+			try {
+				await widget.switchModel(previousIdx);
+				bindL2dEvents();
+				syncCanvasEvents();
+				if (Object.keys(widget.l2d.getMotions()).length === 0) {
+					throw new Error("previous model has no loaded motions");
+				}
+				currentIdx = previousIdx;
+				handleModelLoaded();
+				showBubble("这个形象暂时加载失败,先陪我一会儿吧~");
+			} catch (restoreError) {
+				console.warn("[pet] previous model restore failed", restoreError);
+				currentIdx = previousIdx;
+				showLoadError("加载失败 · 点此选择");
+			}
+		} finally {
+			switchInFlight = false;
 		}
 	}
 
 	function playAction(action) {
-		if (!widget || !ready || !action) return;
+		if (!ready || !action) return;
+		if (isStaticPet(pets[currentIdx])) {
+			clearTimeout(staticActionTimer);
+			staticAction = action.id;
+			staticActionTimer = setTimeout(() => {
+				staticAction = "";
+			}, 900);
+			showBubble(action.message ?? `${pets[currentIdx].name}:${action.label}~`);
+			menuOpen = false;
+			return;
+		}
+		if (!widget) return;
 		if (action.file) widget.l2d.playMotionByFile(action.file, 2);
 		else widget.l2d.playMotion(action.group, action.index, 2);
 		if (action.expression) widget.l2d.setExpression(action.expression);
@@ -174,11 +308,6 @@
 	function playCuteAction() {
 		const action = actionEntries.find((item) => item.id === "cute") ?? actionEntries[0];
 		if (action) playAction(action);
-	}
-
-	function hidePet() {
-		menuOpen = false;
-		widget?.sleep();
 	}
 
 	onMount(() => {
@@ -212,9 +341,10 @@
 
 				widget = createWidget({
 					position: "bottom-left",
-					size: { width: 300, height: 330 },
+					size: { width: 260, height: 290 },
 					primaryColor: "rgba(232,163,92,0.92)",
-					transitionDuration: 700,
+					transitionDuration: 180,
+					transitionType: "fade",
 					menus: { items: [] },
 					statusBar: {
 						style: {
@@ -234,10 +364,11 @@
 
 				bindL2dEvents();
 				syncCanvasEvents();
+				setCanvasVisible(false);
 				nativeStatusBar = [...document.body.children].find(
 					(element) => element.style.zIndex === "9998",
 				) ?? null;
-				setNativeStatusLoading(true);
+				startLoadWatch("正在准备");
 			} catch (error) {
 				console.warn("[pet] l2d-widget 初始化失败,功能已静默关闭", error);
 				loadStatus = "";
@@ -251,6 +382,8 @@
 		menuOpen = false;
 		clearTimeout(pressTimer);
 		clearTimeout(bubbleTimer);
+		clearTimeout(staticActionTimer);
+		clearLoadTimer();
 		cleanupCanvasEvents();
 		window.removeEventListener("pointerdown", onWindowPointerDown);
 		window.removeEventListener("keydown", onKeydown);
@@ -259,14 +392,47 @@
 </script>
 
 {#if loadStatus}
-	<div class="pet-load-status" aria-live="polite">
-		<span class="pet-load-spinner" aria-hidden="true"></span>
-		{loadStatus}
-	</div>
+	{#if loadError}
+		<button
+			type="button"
+			class="pet-load-status pet-load-status-button"
+			aria-label="打开宠物菜单"
+			on:click={(event) => openMenuAt(event.clientX, event.clientY)}
+		>
+			<span aria-hidden="true">!</span>
+			{loadStatus}
+		</button>
+	{:else}
+		<div class="pet-load-status" aria-live="polite">
+			<span class="pet-load-spinner" aria-hidden="true"></span>
+			{loadStatus}
+		</div>
+	{/if}
 {/if}
 
 {#if bubble}
 	<div class="pet-bubble" aria-live="polite">{bubble}</div>
+{/if}
+
+{#if ready && !petHidden && isStaticPet(pets[currentIdx])}
+	<button
+		type="button"
+		class="pet-static-stage"
+		class:is-cute={staticAction === "cute" || staticAction === "tease"}
+		class:is-dancing={staticAction === "dance"}
+		aria-label={`和${pets[currentIdx].name}互动`}
+		on:click={playCuteAction}
+		on:contextmenu={(event) => {
+			event.preventDefault();
+			openMenuAt(event.clientX, event.clientY);
+		}}
+	>
+		<img src={pets[currentIdx].avatar} alt={pets[currentIdx].name} class="pet-static-img" />
+	</button>
+{/if}
+
+{#if ready && petHidden && isStaticPet(pets[currentIdx])}
+	<button type="button" class="pet-static-wake" on:click={() => (petHidden = false)}>显示仙狐</button>
 {/if}
 
 {#if menuOpen}
@@ -275,20 +441,8 @@
 		style={`left:${menuX}px;top:${menuY}px`}
 		bind:this={menuEl}
 		role="menu"
-		aria-label="宠物功能菜单"
+		aria-label="选择宠物形象"
 	>
-		<div class="pet-menu-head">
-			<div class="pet-menu-title">{pets[currentIdx]?.name ?? "伙伴"}</div>
-			<button
-				type="button"
-				class="pet-hide-button"
-				role="menuitem"
-				on:click={hidePet}
-				aria-label="隐藏宠物"
-			>
-				×
-			</button>
-		</div>
 		<div class="pet-pet-strip" aria-label="切换形象">
 			{#each pets as pet, i (pet.id)}
 				<button
@@ -296,38 +450,28 @@
 					class="pet-item"
 					class:is-active={currentIdx === i}
 					aria-label={`切换到${pet.name}`}
-					aria-pressed={currentIdx === i}
-					role="menuitem"
+					aria-checked={currentIdx === i}
+					role="menuitemradio"
 					on:click={() => switchTo(i)}
+					on:mouseenter={() => preloadModel(pet)}
+					on:touchstart={() => preloadModel(pet)}
 				>
 					{#if pet.avatar}
-						<img src={pet.avatar} alt={pet.name} class="pet-item-img" />
+						<img src={pet.avatar} alt="" class="pet-item-img" />
 					{:else}
-						<span class="pet-item-placeholder">🐾</span>
+						<span class="pet-item-placeholder" aria-hidden="true">🐾</span>
 					{/if}
-					<span class="pet-item-name">{pet.name.replace(/^[^·]+·/, "")}</span>
-					{#if currentIdx === i}<span class="pet-check" aria-hidden="true">✓</span>{/if}
 				</button>
 			{/each}
 		</div>
-		{#if primaryAction}
-			<button
-				type="button"
-				class="pet-primary-action"
-				role="menuitem"
-				on:click={() => playAction(primaryAction)}
-			>
-				✨ {primaryAction.label}
-			</button>
-		{/if}
 	</div>
 {/if}
 
 <style>
 	.pet-load-status {
 		position: fixed;
-		left: 62px;
-		bottom: 286px;
+		left: 12px;
+		bottom: 12px;
 		z-index: 10002;
 		display: inline-flex;
 		align-items: center;
@@ -343,6 +487,16 @@
 		pointer-events: none;
 		animation: pet-status-in 0.2s ease-out both;
 	}
+	.pet-load-status-button {
+		border-color: rgba(232, 163, 92, 0.35);
+		color: #9a6a2f;
+		cursor: pointer;
+		pointer-events: auto;
+	}
+	.pet-load-status-button:hover,
+	.pet-load-status-button:focus-visible {
+		background: rgba(255, 250, 240, 0.98);
+	}
 	.pet-load-spinner {
 		width: 9px;
 		height: 9px;
@@ -357,7 +511,7 @@
 	.pet-bubble {
 		position: fixed;
 		left: 58px;
-		bottom: 304px;
+		bottom: 264px;
 		z-index: 10001;
 		max-width: 180px;
 		padding: 8px 12px;
@@ -372,6 +526,51 @@
 		pointer-events: none;
 		animation: pet-bubble-in 0.25s ease-out both;
 	}
+	.pet-static-stage {
+		position: fixed;
+		left: 0;
+		bottom: 0;
+		z-index: 9999;
+		display: grid;
+		width: 260px;
+		height: 290px;
+		align-items: end;
+		justify-items: center;
+		padding: 0 0 4px;
+		border: 0;
+		background: transparent;
+		cursor: pointer;
+		pointer-events: auto;
+	}
+	.pet-static-img {
+		display: block;
+		width: 154px;
+		height: 194px;
+		object-fit: contain;
+		filter: drop-shadow(0 8px 8px rgba(31, 38, 47, 0.16));
+		transform-origin: 50% 100%;
+		animation: pet-static-idle 2.8s ease-in-out infinite;
+	}
+	.pet-static-wake {
+		position: fixed;
+		left: 8px;
+		bottom: 8px;
+		z-index: 9998;
+		padding: 5px 8px;
+		border: 1px solid rgba(255, 255, 255, 0.72);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.88);
+		box-shadow: 0 6px 16px rgba(31, 38, 47, 0.14);
+		color: #666;
+		font-size: 0.64rem;
+		cursor: pointer;
+	}
+	.pet-static-stage.is-cute .pet-static-img {
+		animation: pet-static-cute 0.9s ease-in-out both;
+	}
+	.pet-static-stage.is-dancing .pet-static-img {
+		animation: pet-static-dance 0.9s ease-in-out both;
+	}
 	.pet-bubble::after {
 		content: "";
 		position: absolute;
@@ -384,53 +583,26 @@
 		transform: rotate(45deg);
 	}
 	.pet-menu {
+		--pet-accent: #9278ff;
 		position: fixed;
 		z-index: 10000;
-		width: min(248px, calc(100vw - 16px));
-		padding: 8px;
-		border: 1px solid rgba(255, 255, 255, 0.65);
-		border-radius: 14px;
-		background: rgba(255, 255, 255, 0.92);
+		width: min(184px, calc(100vw - 16px));
+		padding: 7px;
+		border: 1px solid rgba(255, 255, 255, 0.78);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.78);
 		backdrop-filter: blur(18px);
 		-webkit-backdrop-filter: blur(18px);
-		box-shadow: 0 12px 32px rgba(31, 38, 47, 0.18);
+		box-shadow: 0 12px 30px rgba(31, 38, 47, 0.16);
 		color: #555;
 		animation: pet-menu-in 0.18s ease-out both;
 	}
-	.pet-menu-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		padding: 0 2px 6px 4px;
-	}
-	.pet-menu-title {
-		color: #333;
-		font-size: 0.76rem;
-		font-weight: 700;
-	}
-	.pet-hide-button {
-		width: 22px;
-		height: 22px;
-		border: 0;
-		border-radius: 7px;
-		background: transparent;
-		color: #999;
-		font-size: 1rem;
-		line-height: 1;
-		cursor: pointer;
-		transition: background 0.15s ease, color 0.15s ease;
-	}
-	.pet-hide-button:hover,
-	.pet-hide-button:focus-visible {
-		background: rgba(0, 0, 0, 0.06);
-		color: #555;
-	}
 	.pet-pet-strip {
 		display: flex;
+		justify-content: center;
 		gap: 4px;
 		overflow-x: auto;
-		padding: 1px 1px 3px;
+		padding: 0;
 		scrollbar-width: none;
 	}
 	.pet-pet-strip::-webkit-scrollbar {
@@ -438,106 +610,71 @@
 	}
 	.pet-item {
 		position: relative;
-		display: flex;
-		width: 42px;
-		min-width: 42px;
-		min-height: 64px;
-		align-items: center;
-		justify-content: center;
-		flex-direction: column;
-		gap: 2px;
-		padding: 4px 2px;
-		border: 1px solid transparent;
-		border-radius: 9px;
-		background: rgba(255, 255, 255, 0.56);
+		display: grid;
+		width: 52px;
+		min-width: 52px;
+		height: 52px;
+		min-height: 52px;
+		place-items: center;
+		padding: 3px;
+		border: 2px solid transparent;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.42);
 		color: #666;
-		font-size: 0.56rem;
 		cursor: pointer;
+		overflow: hidden;
 		transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 	}
-	.pet-item:hover {
-		background: rgba(255, 255, 255, 0.95);
+	.pet-item:hover,
+	.pet-item:focus-visible {
+		background: rgba(255, 255, 255, 0.92);
 		transform: translateY(-1px);
 	}
 	.pet-item.is-active {
-		border-color: var(--primary);
+		border-color: var(--pet-accent);
 		background: rgba(255, 255, 255, 0.96);
-		color: #333;
-		font-weight: 600;
+		box-shadow: 0 3px 10px rgba(146, 120, 255, 0.2);
 	}
 	.pet-item-img,
 	.pet-item-placeholder {
-		width: 38px;
-		height: 44px;
-		flex-shrink: 0;
-		border-radius: 9px;
+		display: grid;
+		width: 42px;
+		height: 42px;
+		place-items: center;
+		border-radius: 50%;
 		background: rgba(242, 238, 232, 0.72);
 		object-fit: contain;
 	}
 	.pet-item-placeholder {
-		display: grid;
-		place-items: center;
 		font-size: 1rem;
-	}
-	.pet-item-name {
-		max-width: 40px;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	.pet-check {
-		position: absolute;
-		top: 1px;
-		right: 2px;
-		color: var(--primary);
-		font-size: 0.62rem;
-		font-weight: 700;
-	}
-	.pet-primary-action {
-		width: 100%;
-		min-height: 27px;
-		margin-top: 6px;
-		padding: 4px 6px;
-		border: 1px solid rgba(0, 0, 0, 0.05);
-		border-radius: 8px;
-		background: rgba(255, 255, 255, 0.62);
-		color: #555;
-		font-size: 0.64rem;
-		cursor: pointer;
-		transition: background 0.15s ease, transform 0.15s ease;
-	}
-	.pet-primary-action:hover,
-	.pet-primary-action:focus-visible {
-		background: rgba(255, 255, 255, 0.96);
-		transform: translateY(-1px);
 	}
 	:root.dark .pet-bubble,
 	:root.dark .pet-menu {
 		border-color: rgba(255, 255, 255, 0.14);
-		background: rgba(32, 32, 36, 0.9);
+		background: rgba(32, 32, 36, 0.88);
 		color: #ddd;
+	}
+	:root.dark .pet-menu {
+		--pet-accent: #b4a1ff;
 	}
 	:root.dark .pet-bubble::after {
 		background: rgba(32, 32, 36, 0.9);
 	}
-	:root.dark .pet-menu-title {
-		color: #f0f0f0;
-	}
 	:root.dark .pet-load-status,
-	:root.dark .pet-item,
-	:root.dark .pet-hide-button,
-	:root.dark .pet-primary-action {
+	:root.dark .pet-static-wake,
+	:root.dark .pet-item {
 		border-color: rgba(255, 255, 255, 0.08);
 		background: rgba(255, 255, 255, 0.08);
 		color: #ccc;
 	}
 	:root.dark .pet-item.is-active,
 	:root.dark .pet-item:hover,
-	:root.dark .pet-hide-button:hover,
-	:root.dark .pet-primary-action:hover,
-	:root.dark .pet-primary-action:focus-visible {
-		background: rgba(255, 255, 255, 0.16);
+	:root.dark .pet-item:focus-visible {
+		background: rgba(118, 95, 190, 0.34);
 		color: #fff;
+	}
+	:root.dark .pet-item.is-active {
+		border-color: var(--pet-accent);
 	}
 	@keyframes pet-bubble-in {
 		from {
@@ -574,25 +711,66 @@
 			transform: rotate(360deg);
 		}
 	}
+	@keyframes pet-static-idle {
+		0%,
+		100% {
+			transform: translateY(0) rotate(-1deg) scale(0.99);
+		}
+		50% {
+			transform: translateY(-6px) rotate(1deg) scale(1.01);
+		}
+	}
+	@keyframes pet-static-cute {
+		0%,
+		100% {
+			transform: scale(1) rotate(0deg);
+		}
+		35% {
+			transform: scale(1.06) rotate(-4deg);
+		}
+		70% {
+			transform: scale(1.04) rotate(4deg);
+		}
+	}
+	@keyframes pet-static-dance {
+		0%,
+		100% {
+			transform: translateX(0) rotate(0deg);
+		}
+		25% {
+			transform: translateX(-10px) rotate(-7deg);
+		}
+		75% {
+			transform: translateX(10px) rotate(7deg);
+		}
+	}
 	@media (max-width: 520px) {
 		.pet-bubble {
 			left: 50px;
-			bottom: 258px;
+			bottom: 228px;
+		}
+		.pet-static-stage {
+			width: 220px;
+			height: 250px;
+		}
+		.pet-static-img {
+			width: 132px;
+			height: 166px;
 		}
 		.pet-load-status {
-			left: 52px;
-			bottom: 246px;
+			left: 8px;
+			bottom: 8px;
 		}
 		.pet-menu {
-			width: min(250px, calc(100vw - 16px));
+			width: min(184px, calc(100vw - 16px));
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.pet-bubble,
 		.pet-load-status,
+		.pet-static-img,
 		.pet-menu,
 		.pet-item,
-		.pet-primary-action,
 		.pet-load-spinner {
 			animation: none !important;
 			transition-duration: 0.01ms !important;

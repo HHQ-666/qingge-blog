@@ -3,6 +3,7 @@
 		{
 			"id": "pio",
 			"name": "少女·Pio",
+			"scale": 0.78,
 			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Pio/model.json",
 			"avatar": "/pets/avatars/pio.webp",
 			"quotes": [
@@ -36,6 +37,7 @@
 		{
 			"id": "shizuku",
 			"name": "少女·静香",
+			"scale": 0.72,
 			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/shizuku/shizuku.model.json",
 			"avatar": "/pets/avatars/shizuku.webp",
 			"quotes": [
@@ -62,46 +64,28 @@
 			}
 		},
 		{
-			"id": "senko",
-			"name": "狐娘·仙狐",
-			"model": "https://cdn.jsdelivr.net/npm/oml2d-models@0.7.0/models/Senko_Normals/senko.model3.json",
-			"avatar": "/pets/avatars/senko.webp",
+			"id": "koharu",
+			"name": "少女·小春",
+			"scale": 0.72,
+			"model": "/pets/models/koharu/koharu.model.json",
+			"avatar": "/pets/avatars/koharu.webp",
 			"quotes": [
-				"来,让姐姐给你加加油~",
-				"摸摸头,今天也辛苦了。",
-				"一起听首歌放松一下吧~"
+				"小春来陪你写点东西啦~",
+				"今天也请多多关照！",
+				"休息一下，灵感会自己回来哦。"
 			],
 			"actions": {
 				"cute": {
-					"label": "卖萌",
-					"file": "motions/Anim_1.motion3.json",
-					"message": "乖,给你一个摸摸头~"
+					"label": "互动",
+					"file": "mtn/01.mtn",
+					"message": "嘿嘿，被你发现啦~"
 				},
 				"dance": {
-					"label": "唱歌",
-					"file": "motions/Singing.motion3.json",
-					"message": "听仙狐姐姐唱一首~"
-				},
-				"sleep": {
-					"label": "睡觉",
-					"file": "motions/Sleeping.motion3.json",
-					"message": "困了就一起休息吧~"
+					"label": "开心",
+					"file": "mtn/05.mtn",
+					"message": "把今天的好心情分你一半！"
 				}
 			}
-		},
-		{
-			"id": "tororo",
-			"name": "白猫·豆豆",
-			"scale": 1,
-			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-tororo@1.0.5/assets/tororo.model.json",
-			"avatar": "/pets/avatars/tororo.webp"
-		},
-		{
-			"id": "hijiki",
-			"name": "黑猫·煤球",
-			"scale": 1,
-			"model": "https://cdn.jsdelivr.net/npm/live2d-widget-model-hijiki@1.0.5/assets/hijiki.model.json",
-			"avatar": "/pets/avatars/hijiki.webp"
 		}
 	]
 }
