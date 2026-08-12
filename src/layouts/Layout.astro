@@ -3,15 +3,16 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+import { getImage } from "astro:assets";
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import Busuanzi from "@components/fun/Busuanzi.astro";
 import CursorTrail from "@components/fun/CursorTrail.astro";
 import MusicPlayer from "@components/fun/MusicPlayer.astro";
 import PageLoader from "@components/fun/PageLoader.astro";
+import PetCompanion from "@components/fun/PetCompanion.svelte";
 import ReadingProgress from "@components/fun/ReadingProgress.astro";
 import Splash from "@components/Splash.astro";
-import { getImage } from "astro:assets";
-import { profileConfig, siteConfig } from "@/config";
+import { funConfig, profileConfig, siteConfig } from "@/config";
 import defaultOgImage from "../assets/images/banner-ocean-poster.jpg";
 import {
 	AUTO_MODE,
@@ -179,6 +180,7 @@ const bannerOffset =
 		<PageLoader />
 		<slot />
 		<MusicPlayer />
+		{funConfig.pet.enable && <PetCompanion client:only="svelte" petConfig={funConfig.pet} />}
 		<CursorTrail />
 		<Busuanzi />
 
