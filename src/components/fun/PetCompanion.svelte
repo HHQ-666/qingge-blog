@@ -10,6 +10,7 @@
 	let ready = false;
 	let menuOpen = false;
 	let petHidden = false;
+	let visibilityMode = "auto";
 	let currentIdx = 0;
 	let pendingInitialIdx = 0;
 	let actionEntries = [];
@@ -71,6 +72,40 @@
 		if (!canvas) return;
 		canvas.style.visibility = isVisible ? "visible" : "hidden";
 		canvas.style.pointerEvents = isVisible ? "auto" : "none";
+	}
+
+	function setPetHidden(hidden) {
+		petHidden = hidden;
+		if (hidden) bubble = "";
+		setCanvasVisible(!hidden);
+	}
+
+	function updateAutoVisibility() {
+		if (visibilityMode === "hidden") {
+			setPetHidden(true);
+			return;
+		}
+		if (window.scrollY > 180) {
+			visibilityMode = "auto";
+			setPetHidden(true);
+			return;
+		}
+		if (document.body.classList.contains("is-post")) {
+			if (visibilityMode !== "shown") setPetHidden(true);
+			return;
+		}
+		if (visibilityMode === "auto") setPetHidden(false);
+	}
+
+	function togglePetVisibility() {
+		const shouldHide = !petHidden;
+		visibilityMode = shouldHide ? "hidden" : "shown";
+		setPetHidden(shouldHide);
+	}
+
+	function onRouteChange() {
+		visibilityMode = "auto";
+		updateAutoVisibility();
 	}
 
 	function getPreloadAssetPaths(config, pet) {
@@ -207,12 +242,11 @@
 			return;
 		}
 		ready = true;
-		petHidden = false;
 		loadStatus = "";
 		setNativeStatusLoading(false);
-		setCanvasVisible(true);
+		setCanvasVisible(!petHidden);
 		refreshActionEntries();
-		showBubble(`欢迎来到小屋,${pets[currentIdx].name}来啦~`);
+		if (!petHidden) showBubble(`欢迎来到小屋,${pets[currentIdx].name}来啦~`);
 	}
 
 	function bindL2dEvents() {
@@ -236,7 +270,6 @@
 		startLoadWatch("切换中");
 		const previousIdx = currentIdx;
 		currentIdx = idx;
-		petHidden = false;
 		staticAction = "";
 		clearTimeout(staticActionTimer);
 		if (isStaticPet(pets[idx])) {
@@ -247,7 +280,7 @@
 			loadStatus = "";
 			setNativeStatusLoading(false);
 			refreshActionEntries();
-			showBubble(`${pets[currentIdx].name}先用轻盈模式陪你~`);
+			if (!petHidden) showBubble(`${pets[currentIdx].name}先用轻盈模式陪你~`);
 			switchInFlight = false;
 			return;
 		}
@@ -313,6 +346,9 @@
 	onMount(() => {
 		window.addEventListener("pointerdown", onWindowPointerDown);
 		window.addEventListener("keydown", onKeydown);
+		window.addEventListener("scroll", updateAutoVisibility, { passive: true });
+		window.addEventListener("qingge:route-change", onRouteChange);
+		updateAutoVisibility();
 
 		(async () => {
 			try {
@@ -387,6 +423,8 @@
 		cleanupCanvasEvents();
 		window.removeEventListener("pointerdown", onWindowPointerDown);
 		window.removeEventListener("keydown", onKeydown);
+		window.removeEventListener("scroll", updateAutoVisibility);
+		window.removeEventListener("qingge:route-change", onRouteChange);
 		void widget?.destroy();
 	});
 </script>
@@ -414,6 +452,18 @@
 	<div class="pet-bubble" aria-live="polite">{bubble}</div>
 {/if}
 
+{#if ready}
+	<button
+		type="button"
+		class="pet-visibility-toggle"
+		aria-label={petHidden ? "显示宠物" : "隐藏宠物"}
+		aria-pressed={petHidden}
+		on:click={togglePetVisibility}
+	>
+		{petHidden ? "显示宠物" : "隐藏宠物"}
+	</button>
+{/if}
+
 {#if ready && !petHidden && isStaticPet(pets[currentIdx])}
 	<button
 		type="button"
@@ -429,10 +479,6 @@
 	>
 		<img src={pets[currentIdx].avatar} alt={pets[currentIdx].name} class="pet-static-img" />
 	</button>
-{/if}
-
-{#if ready && petHidden && isStaticPet(pets[currentIdx])}
-	<button type="button" class="pet-static-wake" on:click={() => (petHidden = false)}>显示仙狐</button>
 {/if}
 
 {#if menuOpen}
@@ -525,6 +571,29 @@
 		word-break: break-word;
 		pointer-events: none;
 		animation: pet-bubble-in 0.25s ease-out both;
+	}
+	.pet-visibility-toggle {
+		position: fixed;
+		left: 12px;
+		bottom: 10px;
+		z-index: 10003;
+		min-height: 32px;
+		padding: 0.35rem 0.7rem;
+		border: 1px solid rgba(255, 255, 255, 0.8);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.9);
+		box-shadow: 0 4px 14px rgba(31, 38, 47, 0.12);
+		color: #73532f;
+		font-size: 0.75rem;
+		font-weight: 600;
+		backdrop-filter: blur(10px);
+		cursor: pointer;
+	}
+	.pet-visibility-toggle:hover,
+	.pet-visibility-toggle:focus-visible {
+		background: rgba(255, 250, 240, 0.98);
+		outline: 2px solid var(--primary);
+		outline-offset: 2px;
 	}
 	.pet-static-stage {
 		position: fixed;
@@ -662,6 +731,7 @@
 	}
 	:root.dark .pet-load-status,
 	:root.dark .pet-static-wake,
+	:root.dark .pet-visibility-toggle,
 	:root.dark .pet-item {
 		border-color: rgba(255, 255, 255, 0.08);
 		background: rgba(255, 255, 255, 0.08);

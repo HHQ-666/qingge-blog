@@ -96,10 +96,25 @@ const jsonLd = {
                 {!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
             </div>
 
+            {headings.length >= 3 && (
+                <details class="article-toc mb-5 2xl:hidden">
+                    <summary>文章目录 <span aria-hidden="true">· {headings.length}</span></summary>
+                    <nav aria-label="文章目录">
+                        <ul>
+                            {headings.map((heading) => (
+                                <li style={`padding-left: ${Math.min(Math.max(heading.depth - 1, 0), 4) * 0.75}rem`}>
+                                    <a href={`#${heading.slug}`}>{heading.text.replace(/#$/, "")}</a>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                </details>
+            )}
+
             <!-- always show cover as long as it has one -->
 
             {entry.data.image &&
-                <ImageWrapper id="post-cover" src={entry.data.image} basePath={path.join("content/posts/", getDir(entry.id))} class="mb-8 rounded-xl banner-container onload-animation"/>
+                <ImageWrapper id="post-cover" src={entry.data.image} basePath={path.join("content/posts/", getDir(entry.id))} class="mb-6 h-[clamp(11rem,26vh,18rem)] rounded-xl banner-container onload-animation"/>
             }
 
 
@@ -137,3 +152,42 @@ const jsonLd = {
     <Comment />
 
 </MainGridLayout>
+
+<style>
+	.article-toc {
+		border: 1px solid var(--line-divider);
+		border-radius: 1rem;
+		background: var(--btn-regular-bg);
+	}
+	.article-toc summary {
+		padding: 0.8rem 1rem;
+		color: var(--btn-content);
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.article-toc summary:focus-visible,
+	.article-toc a:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: 2px;
+	}
+	.article-toc nav {
+		max-height: 15rem;
+		overflow: auto;
+		padding: 0 1rem 0.8rem;
+	}
+	.article-toc ul {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+	}
+	.article-toc a {
+		display: block;
+		padding: 0.4rem 0;
+		color: var(--btn-content);
+		font-size: 0.875rem;
+		line-height: 1.45;
+	}
+	.article-toc a:hover {
+		color: var(--primary);
+	}
+</style>

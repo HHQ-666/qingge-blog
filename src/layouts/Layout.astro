@@ -171,7 +171,7 @@ const bannerOffset =
 		<link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`}/>
 
 	</head>
-	<body class=" min-h-screen transition " class:list={[{"is-home": isHomePage, "enable-banner": enableBanner}]}
+	<body class=" min-h-screen transition " class:list={[{"is-home": isHomePage, "is-post": setOGTypeArticle, "enable-banner": enableBanner}]}
 		  data-overlayscrollbars-initialize
 	>
 		<ConfigCarrier></ConfigCarrier>
@@ -210,6 +210,9 @@ const bannerOffset =
 	.enable-banner #top-row {
 		@apply h-[calc(var(--banner-height)_-_4.5rem)] transition-all duration-300
 	}
+	body.is-post #main-content-wrapper {
+		top: calc(28vh - 1rem);
+	}
 	/* 仅桌面首页加高并露出完整海景 */
 	@media (min-width: 1024px) {
 		.enable-banner.is-home #banner-wrapper {
@@ -226,6 +229,9 @@ const bannerOffset =
 		}
 		.enable-banner.is-home #sidebar-sticky {
 			@apply top-[calc(1rem_-_var(--banner-height-extend))]
+		}
+		body.is-post #main-content-wrapper {
+			top: calc(38vh - 3.5rem);
 		}
 	}
 	.navbar-hidden {
@@ -457,6 +463,9 @@ const setup = () => {
 		} else {
 			bodyElement!.classList.remove('is-home');
 		}
+		const destinationPath = new URL(visit.to.url, window.location.href).pathname;
+		bodyElement!.classList.toggle('is-post', destinationPath.includes('/posts/'));
+		window.dispatchEvent(new Event('qingge:route-change'));
 
 		// increase the page height during page transition to prevent the scrolling animation from jumping
 		const heightExtend = document.getElementById('page-height-extend')
