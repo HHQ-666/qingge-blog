@@ -6,6 +6,11 @@ export const zh_TW: Translation = {
 	[Key.about]: "關於",
 	[Key.archive]: "彙整",
 	[Key.search]: "搜尋",
+	[Key.searching]: "正在搜尋文章…",
+	[Key.noSearchResults]: "找不到符合的文章，試試其他關鍵字。",
+	[Key.searchUnavailable]: "搜尋暫時無法使用，請稍後再試。",
+	[Key.noPosts]: "找不到符合條件的文章。",
+	[Key.clearFilters]: "清除篩選",
 
 	[Key.tags]: "標籤",
 	[Key.categories]: "分類",

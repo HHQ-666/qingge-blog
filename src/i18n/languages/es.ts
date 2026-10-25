@@ -6,6 +6,11 @@ export const es: Translation = {
 	[Key.about]: "Sobre mí",
 	[Key.archive]: "Archivo",
 	[Key.search]: "Buscar",
+	[Key.searching]: "Buscando artículos…",
+	[Key.noSearchResults]: "No hay artículos coincidentes. Prueba otra palabra clave.",
+	[Key.searchUnavailable]: "La búsqueda no está disponible temporalmente. Inténtalo más tarde.",
+	[Key.noPosts]: "No hay publicaciones que coincidan con estos filtros.",
+	[Key.clearFilters]: "Borrar filtros",
 
 	[Key.tags]: "Etiquetas",
 	[Key.categories]: "Categorías",

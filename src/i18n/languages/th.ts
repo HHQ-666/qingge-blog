@@ -6,6 +6,11 @@ export const th: Translation = {
 	[Key.about]: "เกี่ยวกับ",
 	[Key.archive]: "คลัง",
 	[Key.search]: "ค้นหา",
+	[Key.searching]: "กำลังค้นหาบทความ…",
+	[Key.noSearchResults]: "ไม่พบบทความที่ตรงกัน ลองใช้คำค้นอื่น",
+	[Key.searchUnavailable]: "การค้นหาใช้งานไม่ได้ชั่วคราว โปรดลองอีกครั้งภายหลัง",
+	[Key.noPosts]: "ไม่พบบทความที่ตรงกับตัวกรองนี้",
+	[Key.clearFilters]: "ล้างตัวกรอง",
 
 	[Key.tags]: "ป้ายกำกับ",
 	[Key.categories]: "หมวดหมู่",

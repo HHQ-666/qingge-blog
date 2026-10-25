@@ -6,6 +6,11 @@ export const vi: Translation = {
 	[Key.about]: "Giới thiệu",
 	[Key.archive]: "Kho bài",
 	[Key.search]: "Tìm kiếm",
+	[Key.searching]: "Đang tìm bài viết…",
+	[Key.noSearchResults]: "Không tìm thấy bài viết phù hợp. Hãy thử từ khóa khác.",
+	[Key.searchUnavailable]: "Tìm kiếm tạm thời không khả dụng. Vui lòng thử lại sau.",
+	[Key.noPosts]: "Không có bài viết phù hợp với bộ lọc này.",
+	[Key.clearFilters]: "Xóa bộ lọc",
 
 	[Key.tags]: "Thẻ",
 	[Key.categories]: "Danh mục",

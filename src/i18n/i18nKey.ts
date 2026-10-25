@@ -3,6 +3,11 @@ enum I18nKey {
 	about = "about",
 	archive = "archive",
 	search = "search",
+	searching = "searching",
+	noSearchResults = "noSearchResults",
+	searchUnavailable = "searchUnavailable",
+	noPosts = "noPosts",
+	clearFilters = "clearFilters",
 
 	tags = "tags",
 	categories = "categories",

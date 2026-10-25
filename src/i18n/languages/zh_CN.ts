@@ -6,6 +6,11 @@ export const zh_CN: Translation = {
 	[Key.about]: "关于",
 	[Key.archive]: "归档",
 	[Key.search]: "搜索",
+	[Key.searching]: "正在搜索文章…",
+	[Key.noSearchResults]: "没有找到匹配文章，换个关键词试试。",
+	[Key.searchUnavailable]: "搜索暂时不可用，请稍后重试。",
+	[Key.noPosts]: "没有找到符合条件的文章。",
+	[Key.clearFilters]: "清除筛选",
 
 	[Key.tags]: "标签",
 	[Key.categories]: "分类",
