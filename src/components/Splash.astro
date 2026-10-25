@@ -15,6 +15,7 @@ const enabled = splash.enable;
 			role="dialog"
 			aria-label="开场画面"
 			aria-modal="true"
+			tabindex="-1"
 			data-duration={splash.durationMs}
 			data-fade={splash.fadeMs}
 			data-once={splash.oncePerSession ? "1" : "0"}
@@ -62,6 +63,44 @@ const enabled = splash.enable;
 				const duration = Number(el.getAttribute("data-duration") || 2800);
 				const fade = Number(el.getAttribute("data-fade") || 900);
 				let closed = false;
+				const previousFocus = document.activeElement instanceof HTMLElement
+					? document.activeElement
+					: null;
+				const inertSiblings = Array.from(document.body.children)
+					.filter((child) => child !== el && child instanceof HTMLElement)
+					.map((child) => ({ element: child, wasInert: child.inert }));
+				inertSiblings.forEach(({ element }) => {
+					element.inert = true;
+				});
+
+				const getFocusableElements = () => Array.from(
+					el.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+				).filter((item) => item instanceof HTMLElement && !item.hidden);
+
+				function onKeydown(event) {
+					if (event.key === "Escape") {
+						event.preventDefault();
+						closeSplash();
+						return;
+					}
+					if (event.key !== "Tab") return;
+					const focusable = getFocusableElements();
+					if (focusable.length === 0) {
+						event.preventDefault();
+						el.focus();
+						return;
+					}
+					const first = focusable[0];
+					const last = focusable[focusable.length - 1];
+					if (event.shiftKey && (document.activeElement === first || !el.contains(document.activeElement))) {
+						event.preventDefault();
+						last.focus();
+					} else if (!event.shiftKey && (document.activeElement === last || !el.contains(document.activeElement))) {
+						event.preventDefault();
+						first.focus();
+					}
+				}
+
 				function closeSplash() {
 					if (closed) return;
 					closed = true;
@@ -72,11 +111,18 @@ const enabled = splash.enable;
 						} catch (_) {}
 					}
 					setTimeout(function () {
+						inertSiblings.forEach(({ element, wasInert }) => {
+							element.inert = wasInert;
+						});
 						el.remove();
 						document.documentElement.classList.remove("splash-active");
+						document.removeEventListener("keydown", onKeydown, true);
+						if (previousFocus?.isConnected) previousFocus.focus({ preventScroll: true });
 					}, fade);
 				}
 				const skip = document.getElementById("site-splash-skip");
+				if (skip) skip.focus({ preventScroll: true });
+				document.addEventListener("keydown", onKeydown, true);
 				if (skip) skip.addEventListener("click", closeSplash);
 				el.addEventListener("click", function (e) {
 					if (e.target === el || (e.target && e.target.classList && e.target.classList.contains("site-splash__bg"))) {
