@@ -14,14 +14,14 @@ if (enabled && conf.startDate) {
 
 {
 	enabled && (
-		<div class="card-base p-4 onload-animation site-days" style="animation-delay: 220ms">
+		<site-day-counter class="card-base p-4 onload-animation site-days" data-start-date={conf.startDate} style="animation-delay: 220ms">
 			<div class="flex items-center gap-2 mb-2 text-50">
 				<Icon name="material-symbols:nest-clock-farsight-analog-outline-rounded" class="text-[1.15rem] text-[var(--primary)]" />
 				<span class="text-sm font-semibold tracking-wide">小屋足迹</span>
 			</div>
 			<p class="text-75 text-sm leading-relaxed">
 				小屋已亮灯
-				<span class="font-bold text-[var(--primary)] text-lg mx-1 tabular-nums">{days}</span>
+				<span class="font-bold text-[var(--primary)] text-lg mx-1 tabular-nums" data-site-days-count>{days}</span>
 				天
 			</p>
 			<p class="text-50 text-xs mt-1.5 leading-relaxed">
@@ -42,7 +42,7 @@ if (enabled && conf.startDate) {
 					</p>
 				)
 			}
-		</div>
+		</site-day-counter>
 	)
 }
 
@@ -69,3 +69,25 @@ if (enabled && conf.startDate) {
 		padding: 0 0.05rem;
 	}
 </style>
+
+<script>
+	class SiteDayCounter extends HTMLElement {
+		connectedCallback() {
+			const startDate = this.dataset.startDate;
+			const count = this.querySelector<HTMLElement>("[data-site-days-count]");
+			if (!startDate || !count) return;
+
+			const [year, month, day] = startDate.split("-").map(Number);
+			const start = Date.UTC(year, month - 1, day);
+			const now = new Date();
+			const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+			if (!Number.isFinite(start) || start > today) return;
+
+			count.textContent = String(Math.floor((today - start) / 86400000) + 1);
+		}
+	}
+
+	if (!customElements.get("site-day-counter")) {
+		customElements.define("site-day-counter", SiteDayCounter);
+	}
+</script>

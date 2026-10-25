@@ -9,9 +9,14 @@ const tags = await getTagList();
 
 const siteDays = funConfig.siteDays;
 const showSiteDays = siteDays.enable && Boolean(siteDays.startDate);
-const startDate = showSiteDays ? new Date(`${siteDays.startDate}T00:00:00`) : null;
-const days = startDate
-	? Math.max(1, Math.floor((Date.now() - startDate.getTime()) / 86400000) + 1)
+const startDateParts = showSiteDays ? siteDays.startDate.split("-").map(Number) : null;
+const startDate = startDateParts
+	? Date.UTC(startDateParts[0], startDateParts[1] - 1, startDateParts[2])
+	: null;
+const currentDate = new Date();
+const today = Date.UTC(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+const days = startDate !== null
+	? Math.max(1, Math.floor((today - startDate) / 86400000) + 1)
 	: 0;
 ---
 
@@ -270,9 +275,11 @@ const days = startDate
 			const start = this.dataset.siteDaysStart;
 			const days = this.querySelector<HTMLElement>("[data-mobile-site-days]");
 			if (!start || !days) return;
-			const startDate = new Date(`${start}T00:00:00`);
-			const elapsed = Math.floor((Date.now() - startDate.getTime()) / 86400000) + 1;
-			days.textContent = String(Math.max(1, elapsed));
+			const [year, month, day] = start.split("-").map(Number);
+			const startDate = Date.UTC(year, month - 1, day);
+			const now = new Date();
+			const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+			days.textContent = String(Math.max(1, Math.floor((today - startDate) / 86400000) + 1));
 		}
 	}
 
