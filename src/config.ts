@@ -146,20 +146,6 @@ export const expressiveCodeConfig: ExpressiveCodeConfig = {
 };
 
 /**
- * 作者写作台入口（仅自己可见）
- * - /admin/ 使用同一口令 + GitHub Token 进入发布后台
- * - 浏览器控制台：localStorage.setItem("qingge-author","你的口令") 后刷新
- * - 或在欢迎区小屋图标上连点 5 次，解锁顶部写作图标
- * 口令挡误入；真正写仓库靠 GitHub Token（不会提交进 Git）
- */
-export const authorGate = {
-	/** 写作台口令；请改成自己的，并与 /admin 登录一致 */
-	secret: "qingge666",
-	/** 写作台路径 */
-	adminPath: "/admin/",
-};
-
-/**
  * Twikoo 评论（无需 GitHub 登录，昵称+邮箱即可）
  * 1. 按 docs/DEPLOY.md「Twikoo」一节部署云函数，拿到 envId
  * 2. 把 envId 填到下方（腾讯云环境 ID，或 Vercel 部署完整 URL）
@@ -205,9 +191,9 @@ export const funConfig = {
 	splash: {
 		enable: true,
 		/** 展示时长（毫秒），之后淡出进入主页 */
-		durationMs: 3200,
+		durationMs: 3000,
 		/** 淡出动画时长 */
-		fadeMs: 900,
+		fadeMs: 800,
 		/** 是否每个浏览器会话只播一次 */
 		oncePerSession: true,
 		image: "assets/images/splash-ocean-sunset.jpg",

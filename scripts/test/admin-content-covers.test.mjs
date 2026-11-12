@@ -6,8 +6,8 @@ import test from "node:test";
 const root = new URL("../..", import.meta.url);
 const configPath = new URL("../../public/admin/config.yml", import.meta.url);
 const postsPath = new URL("../../src/content/posts/", import.meta.url);
-const adminPagePath = new URL(
-	"../../src/pages/admin/index.astro",
+const adminBootstrapPath = new URL(
+	"../../public/admin/bootstrap.js",
 	import.meta.url,
 );
 
@@ -21,15 +21,15 @@ test("admin defaults to descending publication date and exposes it as a sort fie
 });
 
 test("admin clears the old saved list view once so the new default sort takes effect", async () => {
-	const adminPage = await readFile(adminPagePath, "utf8");
+	const adminBootstrap = await readFile(adminBootstrapPath, "utf8");
 
 	assert.match(
-		adminPage,
-		/var SORT_PREFERENCE_MIGRATION_KEY = "qingge-admin-sort-v1";/,
+		adminBootstrap,
+		/const SORT_PREFERENCE_MIGRATION_KEY = "qingge-admin-sort-v1";/,
 	);
-	assert.match(adminPage, /function resetSavedPostView\(\)/);
-	assert.match(adminPage, /delete\("contents-view"\)/);
-	assert.match(adminPage, /await resetSavedPostView\(\);/);
+	assert.match(adminBootstrap, /function resetSavedPostView\(\)/);
+	assert.match(adminBootstrap, /delete\("contents-view"\)/);
+	assert.match(adminBootstrap, /resetSavedPostView\(\)\.finally\(loadCms\)/);
 });
 
 test("every post references an existing local cover image", async () => {

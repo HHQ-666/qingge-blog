@@ -6,12 +6,13 @@ backend:
   name: github
   repo: HHQ-666/qingge-blog
   branch: main
-  # 本站已改为「写作口令 + GitHub Token」登录（见 /admin 入口页），
-  # 不再依赖 Netlify OAuth 代理。若以后自建 sveltia-cms-auth，可再填：
-  # base_url: https://your-auth-worker.example.com
+  auth_methods:
+    - token
+  # Sveltia 原生界面提供 GitHub Access Token 登录；OAuth 需另配 auth_type/app_id 或自建 auth 服务。
+  # /admin/* 的主机白名单由 Vercel Middleware 执行。
 
-# 本地若跑 proxy 可保持 true；线上静态托管会忽略
-local_backend: true
+# 生产后台不启用本地 proxy；本地调试时可临时改为 true。
+local_backend: false
 
 # 媒体上传到 public/media/uploads，前台路径 /media/uploads/...
 media_folder: public

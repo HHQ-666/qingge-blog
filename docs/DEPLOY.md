@@ -1,14 +1,14 @@
 ## 当前线上地址
 
 - 生产站：https://blog.hhq688.com/
-- Vercel 默认域（备用）：https://qingge-cabana.vercel.app/
+- Vercel 默认域（公共页面备用；`/admin/*` 按主机白名单拒绝）：https://qingge-cabana.vercel.app/
 - 仓库：https://github.com/HHQ-666/qingge-blog
 
 ---
 
 # 清哥的小屋 · 部署与配置
 
-本文档与当前线上状态对齐（Vercel 生产 + 可选 GitHub Pages 备用）。
+本文档与当前线上状态对齐（Vercel 生产）。后台安全头和主机白名单只在 Vercel 部署中生效。
 
 ---
 
@@ -32,22 +32,11 @@ base: "/",
 
 5. 自定义域名已绑定：`blog.hhq688.com`（Squarespace DNS → Vercel）。
 
-项目根目录已有 `vercel.json`（可为空对象），一般无需再改。
+项目根目录已有 `vercel.json`，包含全站基础安全头和 `/admin/*` 专用 CSP/缓存策略；不要删回空对象。
 
-### 方案 B：GitHub Pages（备用）
+### 方案 B：GitHub Pages（不支持后台）
 
-仓库已包含 [`.github/workflows/deploy-pages.yml`](../.github/workflows/deploy-pages.yml)。
-
-| 仓库形态 | 访问地址 | `astro.config.mjs` |
-|----------|----------|--------------------|
-| 用户主页 `HHQ-666.github.io` | `https://hhq-666.github.io/` | `site: "https://hhq-666.github.io/"`, `base: "/"` |
-| 项目页 `qingge-blog` | `https://hhq-666.github.io/qingge-blog/` | `site: "https://hhq-666.github.io"`, `base: "/qingge-blog/"` |
-
-启用步骤：
-
-1. 仓库 → **Settings** → **Pages** → **Source** 选 **GitHub Actions**  
-2. 按上表改好 `site` / `base` 后推送 `main`  
-3. 若长期只用 Vercel，可在仓库 Settings → Actions 中禁用该 workflow，避免重复构建
+当前仓库不再自动部署 GitHub Pages。即使手工生成静态镜像，也不会运行 Vercel `middleware.js`、后台 CSP 或 `ADMIN_ALLOWED_HOSTS`；因此不要把 Pages 地址当作写作台入口，生产后台只使用 Vercel 的 `blog.hhq688.com/admin/`。
 
 ### Git 远程
 
@@ -212,51 +201,52 @@ pnpm new-post <filename>  # 新建文章
 
 PC 后台：[`/admin/`](https://blog.hhq688.com/admin/)  
 配置：[`public/admin/config.yml`](../public/admin/config.yml)  
-入口页：[`public/admin/index.html`](../public/admin/index.html)
+入口页：[`src/pages/admin/index.astro`](../src/pages/admin/index.astro)
 
 ### 功能
 
-- 仅 **GitHub 登录** 且对仓库 `HHQ-666/qingge-blog` 有写权限的人可进入（即你自己）
+- Vercel Middleware 只允许 `ADMIN_ALLOWED_HOSTS` 中的主机访问 `/admin/*`
+- 进入后由 **Sveltia 原生认证界面** 校验 `HHQ-666/qingge-blog` 的写权限（当前配置支持细粒度 Access Token；OAuth 需另行配置）
 - 新建/编辑 `src/content/posts/*.md`，保存即 commit 到 `main`
 - Vercel 自动构建后上线
 - 封面上传目录：`public/media/uploads/`
 
-### 登录方式（口令 + GitHub Token）
+### 登录方式（Vercel 主机白名单 + Sveltia 原生认证）
 
-本站 `/admin/` 已改为简单入口，**不再依赖 GitHub OAuth / Netlify 代理**（旧的 `api.netlify.com/auth` 会 Not Found）。
+本站 `/admin/` 不再输出或比较前端口令，也不再自行写入 GitHub Token。Sveltia CMS 使用固定版本的官方脚本显示认证界面；当前配置不包含 OAuth App，因此按 Access Token 方式使用。
 
 1. 打开 [`/admin/`](https://blog.hhq688.com/admin/)
-2. 输入**写作口令**（与 `src/config.ts` 里 `authorGate.secret` 一致，当前为 `qingge666`）
-3. **首次**再填一个 GitHub Token：
+2. 若出现 Vercel 404，检查项目 Production 环境变量 `ADMIN_ALLOWED_HOSTS` 是否包含当前主机（默认生产值：`blog.hhq688.com`）
+3. 在 Sveltia 的 Access Token 界面完成认证：
    - 打开 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens)
-   - 生成 token：细粒度 Token 只选择 `HHQ-666/qingge-blog`，开启 **Contents: Read and write**；经典 Token 勾选 **`repo`**（组织仓库还需 `read:org`）
-   - 粘贴到写作台（可勾选「在本机记住 Token」）
-4. 点「进入写作台」→ 验证通过后直接进后台
+   - 只创建细粒度、单仓库、短有效期 Token，并开启 **Contents: Read and write**；不要使用经典 `repo` Token
+   - 本站不主动持久化 Token，也不提供“记住 Token”功能；Sveltia 运行期间可能使用浏览器存储，后台启动和离开时会清理已知的旧版 `qingge-admin-gh-token`、`sveltia-cms.user`、`decap-cms-user`、`netlify-cms-user` 和 `sveltia-cms.auth` 键
+4. 认证通过后直接进入文章列表
 
 说明：
 
-- 口令只挡闲人误入；**真正写仓库**靠 GitHub Token
-- Token 只存在你自己浏览器的 localStorage，不会进 Git
-- 同一浏览器会话内口令通过后刷新可自动进入；换设备需再输入
-- 若 Token 过期/无写权限，入口页会提示重新填写
+- 主机白名单是路由边界，不等于邮箱级身份认证；真正写仓库仍靠 GitHub 权限
+- 不要把 PAT 提交到 Git、聊天记录或截图；旧 Token 应在 GitHub 立即撤销
+- 若 Token 过期或无写权限，按 Sveltia 的错误提示重新认证
 
 #### （可选）自建 OAuth
 
-若仍想用「Sign in with GitHub」按钮，可自建 [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth)，并在 `public/admin/config.yml` 填写 `base_url`。对个人站一般没必要。
+若希望完全不输入 PAT，可后续自建 [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth)，并在 `public/admin/config.yml` 填写 `base_url`；这属于独立的 OAuth 配置，不是本期 DNS/代码改动。
 
 ### 本地调试 CMS
 
 ```bash
 pnpm dev
-# 另开终端（可选，Sveltia local_backend）
-npx @sveltia/cms@latest  # 若文档要求 proxy，按官方本地代理说明
+# 本地默认仍走 GitHub backend；如需文件系统 proxy，临时把 config.yml 的 local_backend 改为 true
+npx @sveltia/cms@0.197.0  # 仅在按官方文档需要 proxy 时启动
 ```
 
 打开 http://localhost:4321/admin/  
-`config.yml` 中 `local_backend: true` 时，可用本地代理直接写文件系统（按 Sveltia 当前文档启动 proxy）。
+`config.yml` 中 `local_backend: false` 是生产默认值；本地 proxy 调试结束后请改回 false。
 
 ### 安全说明
 
 - 不要把 `/admin` 链到全站导航给所有人（可仅收藏书签）
-- 真正权限靠 **GitHub 仓库写权限**，不是靠隐藏链接
-- OAuth Secret / PAT 不要提交进仓库
+- 在 Vercel Production 设置 `ADMIN_ALLOWED_HOSTS`；默认只允许 `blog.hhq688.com`
+- 主机白名单不是完整身份认证；需要邮箱/组织级保护时启用 Vercel Deployment Protection 或 GitHub OAuth
+- OAuth Secret / PAT 不要提交进仓库；部署前撤销旧写作台 Token
