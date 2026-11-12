@@ -95,7 +95,7 @@
 					<div class="w-[15%] md:w-[10%]">
 						<div class="h-3 w-3 bg-none rounded-full outline outline-[var(--primary)] mx-auto -outline-offset-[2px] z-50 outline-3"></div>
 					</div>
-					<div class="w-[70%] md:w-[80%] transition text-left text-50">
+					<div class="w-[70%] md:w-[80%] transition text-left text-60">
 						{group.posts.length} {i18n(group.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount)}
 					</div>
 				</div>
@@ -107,7 +107,7 @@
 						class="group btn-plain !block min-h-10 w-full rounded-lg hover:text-[initial]"
 					>
 						<div class="flex flex-row justify-start items-center min-h-10">
-							<div class="w-[15%] md:w-[10%] shrink-0 transition text-sm text-right text-50">
+							<div class="w-[15%] md:w-[10%] shrink-0 transition text-sm text-right text-60">
 								{formatDate(post.data.published)}
 							</div>
 							<div class="w-[15%] md:w-[10%] shrink-0 relative dash-line h-10 flex items-center">
@@ -116,7 +116,7 @@
 							<div class="w-[70%] md:max-w-[65%] md:w-[65%] text-left font-bold group-hover:translate-x-1 transition-all group-hover:text-[var(--primary)] text-75 pr-3 sm:pr-8 whitespace-normal break-words leading-snug py-2">
 								{post.data.title}
 							</div>
-							<div class="hidden md:block md:w-[15%] text-left text-sm transition whitespace-nowrap overflow-ellipsis overflow-hidden text-30">
+							<div class="hidden md:block md:w-[15%] text-left text-sm transition whitespace-nowrap overflow-ellipsis overflow-hidden text-60">
 								{formatTag(post.data.tags)}
 							</div>
 						</div>

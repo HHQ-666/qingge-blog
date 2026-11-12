@@ -8,7 +8,10 @@ let days = 0;
 if (enabled && conf.startDate) {
 	const start = new Date(`${conf.startDate}T00:00:00`);
 	const now = new Date();
-	days = Math.max(1, Math.floor((now.getTime() - start.getTime()) / 86400000) + 1);
+	days = Math.max(
+		1,
+		Math.floor((now.getTime() - start.getTime()) / 86400000) + 1,
+	);
 }
 ---
 

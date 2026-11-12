@@ -1,4 +1,5 @@
-const SCRIPT_SRC = "https://cdn.jsdelivr.net/npm/twikoo@1.6.44/dist/twikoo.min.js";
+const SCRIPT_SRC =
+	"https://cdn.jsdelivr.net/npm/twikoo@1.6.44/dist/twikoo.min.js";
 const SCRIPT_PROMISE_KEY = "__qinggeTwikooScriptPromise";
 const SCRIPT_SELECTOR = 'script[data-qingge-twikoo="1"]';
 
@@ -9,7 +10,10 @@ export function claimMount(host) {
 }
 
 export function isCurrentMount(host, token) {
-	return Boolean(host?.isConnected) && host.dataset.twikooMountToken === String(token);
+	return (
+		Boolean(host?.isConnected) &&
+		host.dataset.twikooMountToken === String(token)
+	);
 }
 
 export function loadTwikoo(documentRef = document) {
@@ -36,7 +40,8 @@ export function loadTwikoo(documentRef = document) {
 
 	const sharedPromise = promise.catch((error) => {
 		script.remove?.();
-		if (windowRef[SCRIPT_PROMISE_KEY] === sharedPromise) delete windowRef[SCRIPT_PROMISE_KEY];
+		if (windowRef[SCRIPT_PROMISE_KEY] === sharedPromise)
+			delete windowRef[SCRIPT_PROMISE_KEY];
 		throw error;
 	});
 	windowRef[SCRIPT_PROMISE_KEY] = sharedPromise;
@@ -47,7 +52,8 @@ export function loadTwikoo(documentRef = document) {
 export async function mountTwikoo(host, options) {
 	const token = claimMount(host);
 	host.setAttribute("aria-busy", "true");
-	host.innerHTML = '<p class="twikoo-loading text-50 text-sm" role="status">评论加载中…</p>';
+	host.innerHTML =
+		'<p class="twikoo-loading text-50 text-sm" role="status">评论加载中…</p>';
 
 	try {
 		const twikoo = await loadTwikoo(host.ownerDocument || document);
@@ -68,7 +74,8 @@ export async function mountTwikoo(host, options) {
 	} catch (error) {
 		if (!isCurrentMount(host, token)) return false;
 		host.removeAttribute("aria-busy");
-		host.innerHTML = '<p class="text-50 text-sm">评论加载失败，请稍后刷新重试。</p>';
+		host.innerHTML =
+			'<p class="text-50 text-sm">评论加载失败，请稍后刷新重试。</p>';
 		console.error("[twikoo]", error);
 		return false;
 	}

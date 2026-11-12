@@ -205,7 +205,7 @@
 	aria-expanded={panelOpen}
 	aria-controls="search-panel"
 	id="search-switch"
-	class="btn-plain scale-animation lg:!hidden rounded-lg w-11 h-11 active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
+	class="btn-plain scale-animation lg:!hidden rounded-lg w-[44px] h-[44px] active:scale-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--primary)]"
 >
 	<Icon icon="material-symbols:search" class="text-[1.25rem]" />
 </button>

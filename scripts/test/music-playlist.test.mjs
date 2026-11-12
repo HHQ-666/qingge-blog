@@ -145,7 +145,7 @@ test("site configuration keeps 20 to 30 songs with unique artists", async () => 
 		"utf8",
 	);
 	const songsSection = source.match(
-		/songs:\s*\[([\s\S]*?)\n\s*\],\n\s*\},\n\s*\};/,
+		/songs:\s*\[([\s\S]*?)\n\s*\],/,
 	);
 	assert.ok(songsSection, "musicPlayer songs section should be present");
 

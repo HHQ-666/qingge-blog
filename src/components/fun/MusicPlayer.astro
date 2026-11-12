@@ -1455,32 +1455,32 @@ const visiblePlaylistSize = String(conf?.playlistSize ?? 30);
 				from { opacity: 0; transform: translateY(10px) scale(0.97); }
 				to { opacity: 1; transform: translateY(0) scale(1); }
 			}
-			@media (max-width: 640px) {
-				#qingge-music.qm {
-					right: -0.85rem;
-					bottom: max(0.75rem, env(safe-area-inset-bottom));
-					left: auto;
-					width: auto;
-					display: flex;
-					justify-content: flex-end;
-					transition: right 200ms ease;
-				}
-				#qingge-music.qm.is-open,
-				#qingge-music.qm.is-compact {
-					right: max(0.55rem, env(safe-area-inset-right));
-					left: max(0.55rem, env(safe-area-inset-left));
-				}
-				.qm__fab {
-					width: 3.35rem;
-					height: 3.35rem;
-					opacity: 0.62;
-				}
-				.qm.is-collapsed .qm__fab { transform: translateX(0.3rem); }
-				.qm.is-collapsed .qm__fab:hover,
-				.qm.is-collapsed .qm__fab:focus-visible {
-					opacity: 1;
-					transform: translateX(-0.15rem);
-				}
+@media (max-width: 640px) {
+					#qingge-music.qm {
+						right: max(0.55rem, env(safe-area-inset-right));
+						bottom: max(0.75rem, env(safe-area-inset-bottom));
+						left: auto;
+						width: auto;
+						display: flex;
+						justify-content: flex-end;
+						transition: right 200ms ease;
+					}
+					#qingge-music.qm.is-open,
+					#qingge-music.qm.is-compact {
+						right: max(0.55rem, env(safe-area-inset-right));
+						left: max(0.55rem, env(safe-area-inset-left));
+					}
+					.qm__fab {
+						width: 3.35rem;
+						height: 3.35rem;
+						opacity: 1;
+					}
+					.qm.is-collapsed .qm__fab { transform: none; }
+					.qm.is-collapsed .qm__fab:hover,
+					.qm.is-collapsed .qm__fab:focus-visible {
+						opacity: 1;
+						transform: translateY(-1px);
+					}
 				.qm.is-compact .qm__mini {
 					width: 100%;
 					max-width: none;
