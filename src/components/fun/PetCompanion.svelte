@@ -31,8 +31,31 @@
 	const MODEL_LOAD_TIMEOUT = 15000;
 	const PET_MENU_WIDTH = 184;
 	const PET_MENU_HEIGHT = 82;
+	const PET_VISIBILITY_KEY = "qingge-pet-visibility";
+	const MOBILE_QUERY = "(max-width: 639.98px)";
 	const preloadedModels = new Map();
 	let mounted = true;
+
+	function isNarrowViewport() {
+		return typeof window !== "undefined" && window.matchMedia(MOBILE_QUERY).matches;
+	}
+
+	function readStoredVisibility() {
+		try {
+			const stored = localStorage.getItem(PET_VISIBILITY_KEY);
+			return stored === "hidden" || stored === "shown" ? stored : null;
+		} catch {
+			return null;
+		}
+	}
+
+	function storeVisibility(mode) {
+		try {
+			localStorage.setItem(PET_VISIBILITY_KEY, mode);
+		} catch {
+			// 隐私模式下写入失败时，仅本次会话内生效
+		}
+	}
 
 	function clearLoadTimer() {
 		clearTimeout(loadTimer);
@@ -100,11 +123,18 @@
 	function togglePetVisibility() {
 		const shouldHide = !petHidden;
 		visibilityMode = shouldHide ? "hidden" : "shown";
+		storeVisibility(visibilityMode);
 		setPetHidden(shouldHide);
 	}
 
 	function onRouteChange() {
-		visibilityMode = "auto";
+		const stored = readStoredVisibility();
+		if (stored) {
+			visibilityMode = stored;
+		} else {
+			// 移动端默认不展示，避免遮挡首屏内容
+			visibilityMode = isNarrowViewport() ? "hidden" : "auto";
+		}
 		updateAutoVisibility();
 	}
 
@@ -348,6 +378,8 @@
 		window.addEventListener("keydown", onKeydown);
 		window.addEventListener("scroll", updateAutoVisibility, { passive: true });
 		window.addEventListener("qingge:route-change", onRouteChange);
+		const storedVisibility = readStoredVisibility();
+		visibilityMode = storedVisibility ?? (isNarrowViewport() ? "hidden" : "auto");
 		updateAutoVisibility();
 
 		(async () => {
@@ -457,7 +489,6 @@
 		type="button"
 		class="pet-visibility-toggle"
 		aria-label={petHidden ? "显示宠物" : "隐藏宠物"}
-		aria-pressed={petHidden}
 		on:click={togglePetVisibility}
 	>
 		{petHidden ? "显示宠物" : "隐藏宠物"}
@@ -574,10 +605,11 @@
 	}
 	.pet-visibility-toggle {
 		position: fixed;
-		left: 12px;
-		bottom: 10px;
+		left: max(12px, env(safe-area-inset-left));
+		bottom: max(10px, env(safe-area-inset-bottom));
 		z-index: 10003;
 		min-height: 32px;
+		min-width: 32px;
 		padding: 0.35rem 0.7rem;
 		border: 1px solid rgba(255, 255, 255, 0.8);
 		border-radius: 999px;
@@ -588,6 +620,14 @@
 		font-weight: 600;
 		backdrop-filter: blur(10px);
 		cursor: pointer;
+	}
+	/* 触屏或窄屏都保证 44px 触控目标（隐藏宠物时它是唯一的宠物入口） */
+	@media (pointer: coarse), (max-width: 639.98px) {
+		.pet-visibility-toggle {
+			min-height: 44px;
+			min-width: 44px;
+			padding: 0.5rem 0.9rem;
+		}
 	}
 	.pet-visibility-toggle:hover,
 	.pet-visibility-toggle:focus-visible {

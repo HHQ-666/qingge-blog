@@ -1,0 +1,2 @@
+# Live2D motion files are vendored runtime assets with upstream line endings.
+public/pets/models/**/*.mtn binary
