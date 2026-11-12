@@ -6,6 +6,10 @@
 
 这套方式不修改 `hhq688.com` 的名称服务器、Squarespace 配置、Vercel 配置或邮箱 DNS。
 
+## Worker 来源检查的边界
+
+Worker 会对带有 `Origin` 或 `Referer` 的请求校验 `blog.hhq688.com`（及其子域）来源，并拒绝明显的外部来源。为兼容浏览器直接打开图片、隐私浏览器和爬虫，两个来源头都缺失时仍放行；这是一层弱防盗链提示，不是访问认证，也不能保护私密对象。因此 R2 桶中只能放公开媒体，不能把密钥、备份或其他私密文件与文章图片混放。
+
 ## 已迁移的 CSDN 图片
 
 迁移清单在 `docs/media-migration-manifest.json`。每个对象都在上传后通过 Worker 验证为 `image/*` 响应，Markdown 才会替换为新的图片 URL。

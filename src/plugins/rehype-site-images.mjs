@@ -3,15 +3,19 @@ import { visit } from "unist-util-visit";
 /** 为 Markdown 正文图片补全加载属性，并把已知旧媒体域名迁移到当前来源。 */
 export function rehypeSiteImages({ origin, legacyOrigins }) {
 	const targetOrigin = new URL(origin).origin;
-	const knownOrigins = new Set(legacyOrigins.map((value) => new URL(value).origin));
+	const knownOrigins = new Set(
+		legacyOrigins.map((value) => new URL(value).origin),
+	);
 
 	return (tree) => {
 		visit(tree, "element", (node) => {
 			if (node.tagName !== "img") return;
 
-			const properties = node.properties || (node.properties = {});
+			if (!node.properties) node.properties = {};
+			const properties = node.properties;
 			if (typeof properties.loading !== "string") properties.loading = "lazy";
-			if (typeof properties.decoding !== "string") properties.decoding = "async";
+			if (typeof properties.decoding !== "string")
+				properties.decoding = "async";
 			if (typeof properties.src !== "string") return;
 
 			try {
