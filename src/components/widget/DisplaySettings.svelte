@@ -2,10 +2,17 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
-import { getDefaultHue, getHue, setHue } from "@utils/setting-utils";
+import { getDefaultHue, getHue, getReadingSize, setHue, setReadingSize } from "@utils/setting-utils";
+import type { ReadingSize } from "@utils/setting-utils";
 
 let hue = getHue();
 const defaultHue = getDefaultHue();
+let readingSize: ReadingSize = getReadingSize();
+const readingOptions: { value: ReadingSize; label: string }[] = [
+	{ value: "sm", label: "小" },
+	{ value: "md", label: "标准" },
+	{ value: "lg", label: "大" },
+];
 
 function resetHue() {
 	hue = getDefaultHue();
@@ -14,6 +21,7 @@ function resetHue() {
 $: if (hue || hue === 0) {
 	setHue(hue);
 }
+$: setReadingSize(readingSize);
 </script>
 
 <div id="display-setting" translate="no" class="float-panel float-panel-closed absolute transition-all w-80 right-4 px-4 py-4">
@@ -40,6 +48,22 @@ $: if (hue || hue === 0) {
     <div class="w-full h-6 px-1 bg-[oklch(0.80_0.10_0)] dark:bg-[oklch(0.70_0.10_0)] rounded select-none">
         <input aria-label={i18n(I18nKey.themeColor)} type="range" min="0" max="360" bind:value={hue}
                class="slider" id="colorSlider" step="5" style="width: 100%">
+    </div>
+    <div class="mt-4 flex items-center justify-between gap-3">
+        <span class="text-sm font-bold text-neutral-900 dark:text-neutral-100 transition">阅读字号</span>
+        <div class="flex items-center gap-1 rounded-lg bg-[var(--btn-regular-bg)] p-1" role="group" aria-label="阅读字号">
+            {#each readingOptions as option}
+                <button
+                    type="button"
+                    class="reading-size-option"
+                    class:is-active={readingSize === option.value}
+                    aria-pressed={readingSize === option.value}
+                    on:click={() => (readingSize = option.value)}
+                >
+                    {option.label}
+                </button>
+            {/each}
+        </div>
     </div>
 </div>
 
@@ -89,5 +113,21 @@ $: if (hue || hue === 0) {
             background rgba(255, 255, 255, 0.8)
           &:active
             background rgba(255, 255, 255, 0.6)
+
+    #display-setting .reading-size-option
+      min-width 2.75rem
+      height 2rem
+      padding 0 0.5rem
+      border-radius 0.45rem
+      font-size 0.75rem
+      font-weight 700
+      color var(--deep-text)
+      transition background 0.15s ease, color 0.15s ease
+      cursor pointer
+
+    #display-setting .reading-size-option.is-active
+      background var(--card-bg)
+      color var(--primary)
+      box-shadow 0 1px 4px rgba(0, 0, 0, 0.12)
 
 </style>

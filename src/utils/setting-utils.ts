@@ -13,6 +13,26 @@ export function getDefaultHue(): number {
 	return Number.parseInt(configCarrier?.dataset.hue || fallback, 10);
 }
 
+export type ReadingSize = "sm" | "md" | "lg";
+
+const READING_SIZES: Record<ReadingSize, { fontSize: string; lineHeight: string }> = {
+	sm: { fontSize: "15px", lineHeight: "1.85" },
+	md: { fontSize: "16px", lineHeight: "1.9" },
+	lg: { fontSize: "18px", lineHeight: "1.95" },
+};
+
+export function getReadingSize(): ReadingSize {
+	const stored = localStorage.getItem("reading-size");
+	return stored === "sm" || stored === "lg" ? stored : "md";
+}
+
+export function setReadingSize(size: ReadingSize): void {
+	localStorage.setItem("reading-size", size);
+	const root = document.documentElement;
+	root.style.setProperty("--reading-font-size", READING_SIZES[size].fontSize);
+	root.style.setProperty("--reading-line-height", READING_SIZES[size].lineHeight);
+}
+
 export function getHue(): number {
 	const stored = localStorage.getItem("hue");
 	return stored ? Number.parseInt(stored, 10) : getDefaultHue();

@@ -155,6 +155,16 @@ const bannerOffset =
 			const hue = localStorage.getItem('hue') || configHue;
 			document.documentElement.style.setProperty('--hue', hue);
 
+			// Apply the reading size before first paint, so article text never reflows
+			const readingSizes = {
+				sm: ['15px', '1.85'],
+				md: ['16px', '1.9'],
+				lg: ['18px', '1.95'],
+			};
+			const reading = readingSizes[localStorage.getItem('reading-size')] || readingSizes.md;
+			document.documentElement.style.setProperty('--reading-font-size', reading[0]);
+			document.documentElement.style.setProperty('--reading-line-height', reading[1]);
+
 			// calculate the --banner-height-extend, which needs to be a multiple of 4 to avoid blurry text
 			let offset = Math.floor(window.innerHeight * (BANNER_HEIGHT_EXTEND / 100));
 			offset = offset - offset % 4;

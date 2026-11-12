@@ -1,4 +1,10 @@
 .custom-md {
+    /* 正文阅读尺寸：16px 起、1.9 行高；由显示设置的“阅读字号”三档通过 CSS 变量覆盖 */
+    &.custom-md {
+        font-size: var(--reading-font-size, 16px);
+        line-height: var(--reading-line-height, 1.9);
+    }
+
     h1 {
         @apply text-3xl;
     }
